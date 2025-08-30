@@ -1,38 +1,41 @@
-// Service Worker لتطبيق Nouran Senses
-// مسؤول عن الكاش البسيط + تجربة المزامنة في الخلفية
+// Service Worker — Nouran Senses (basic shell cache + hooks)
+// مبدئي: هنطوّره لاحقًا لإشعارات التحكم في التسجيل
 
-self.addEventListener('install', (event) => {
-  console.log('Service Worker: Install');
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activated');
-  return self.clients.claim();
-});
-
-// محاولة لتخزين الملفات الأساسية (shell) - ممكن توسعها لاحقاً
+const CACHE = 'nshell-v2';
 const SHELL = [
   '/',
   '/index.html',
   '/style.css',
-  '/app.js'
+  '/app.js',
+  '/manifest.webmanifest'
 ];
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((resp) => {
-      return resp || fetch(event.request);
-    })
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(
+      keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+    ))
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', (e) => {
+  const { request } = e;
+  // شبكة أولاً للملفات الديناميكية، وكاش احتياطي للـ shell
+  e.respondWith(
+    fetch(request).catch(() => caches.match(request))
   );
 });
 
-// Background Sync تجريبي
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'nouran-upload') {
-    event.waitUntil((async () => {
-      console.log('Background sync tick: nouran-upload');
-      // هنا ممكن تنفّذ إعادة محاولة رفع ملفات متأخرة
-    })());
-  }
+// إشعارات — أساس (هنفعّل أزرار الإيقاف/الاستئناف لاحقًا)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  // مثال: نبعث أمر للصفحة عبر BroadcastChannel (هنكمّلها في التحديث القادم)
+  // const ch = new BroadcastChannel('ns-control');
+  // ch.postMessage({ action: 'toggle-record' });
 });
