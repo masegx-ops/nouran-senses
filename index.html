@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nouran Senses — الحواس الحيّة</title>
+  <meta name="theme-color" content="#e24ba8"/>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="app.js"></script>
+
+  <!-- Google APIs (Drive) -->
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+  <!-- Google Identity Services (OAuth) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">✦</span>
+        <span class="title">Nouran Senses</span>
+        <span class="subtitle">باب سِحري بينك وبين العالم</span>
+      </div>
+      <nav class="ribbon" aria-label="شريط الوظائف">
+        <button id="btnMagicDoor" class="pill" title="المحادثة السحرية">الباب السحري</button>
+        <button id="btnCamera" class="pill" title="الكاميرا الحيّة">الكاميرا</button>
+        <button id="btnScreen" class="pill" title="تسجيل الشاشة">الشاشة</button>
+        <button id="btnMic" class="pill" title="مؤشر الصوت">الصوت</button>
+        <button id="btnDrive" class="pill" title="الربط مع Google Drive">Drive</button>
+        <button id="btnSettings" class="pill accent" title="الإعدادات">إعدادات</button>
+      </nav>
+    </header>
+
+    <main class="grid">
+      <!-- العرض الحي -->
+      <section class="card live">
+        <h2>العرض الحي</h2>
+
+        <div class="live-wrap">
+          <video id="liveVideo" playsinline autoplay muted></video>
+          <canvas id="previewCanvas" class="hidden"></canvas>
+
+          <!-- مؤشر الصوت -->
+          <div class="mic-meter">
+            <div class="bar" id="micBar"></div>
+          </div>
+
+          <!-- تحكّم الكاميرا -->
+          <div class="live-ctrls">
+            <button id="startCam" class="primary">تشغيل الكاميرا</button>
+            <button id="stopCam" class="ghost">إيقاف</button>
+            <button id="snap" class="ghost">لقطة</button>
+          </div>
+        </div>
+
+        <!-- تسجيل الشاشة -->
+        <div class="screen-wrap">
+          <video id="screenVideo" playsinline controls class="hidden"></video>
+          <div class="screen-ctrls">
+            <button id="startScreen" class="primary">بدء تسجيل الشاشة</button>
+            <button id="stopScreen" class="ghost">إيقاف التسجيل</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- الباب السحري (شات خاص وإشارات سرية) -->
+      <aside class="card chat" id="magicDoor">
+        <h2>الباب السحري</h2>
+        <div class="chatlog" id="chatlog" aria-live="polite"></div>
+        <form id="chatForm" class="chatbox">
+          <input id="chatInput" type="text" placeholder="اكتب سرك أو أمرك هنا..." />
+          <button type="submit" class="primary">إرسال</button>
+        </form>
+        <div class="hint">اكتب: <code>اهلا نوران</code> لتفعيل الوضع الخاص</div>
+      </aside>
+
+      <!-- الحالة والعمليات -->
+      <section class="card actions">
+        <h2>العمليات</h2>
+        <div class="toggles">
+          <label><input type="checkbox" id="autoUpload" checked/> رفع تلقائي بعد الالتقاط</label>
+          <label><input type="checkbox" id="autoAnalyze" checked/> تحليل تلقائي بعد الرفع</label>
+          <label><input type="checkbox" id="autoDelete" /> حذف محلي بعد التحليل</label>
+          <label><input type="checkbox" id="bgSync" /> مزامنة في الخلفية (تجريبية)</label>
+        </div>
+
+        <div class="progress">
+          <div class="line">
+            <span>الرفع:</span>
+            <progress id="uploadProgress" max="100" value="0"></progress>
+            <span id="uploadLabel">0%</span>
+          </div>
+          <div class="line">
+            <span>التحليل:</span>
+            <progress id="aiProgress" max="100" value="0"></progress>
+            <span id="aiLabel">0%</span>
+          </div>
+        </div>
+
+        <div id="toast" class="toast"></div>
+      </section>
+    </main>
+
+    <!-- نافذة الإعدادات -->
+    <dialog id="settingsDialog">
+      <form method="dialog" class="settings">
+        <h3>الإعدادات والربط</h3>
+        <p class="muted">مفاتيحك بتتخزن محليًا على جهازك (localStorage) — متتحطش في الكود أبدًا.</p>
+
+        <label>OpenAI API Key
+          <input id="openaiKey" type="password" placeholder="sk-..." />
+        </label>
+
+        <label>Google OAuth Client ID (للربط مع Drive)
+          <input id="googleClientId" type="text" placeholder="1234567890-xxxxxxxx.apps.googleusercontent.com" />
+        </label>
+
+        <label>Drive Folder ID (اختياري للحفظ في مجلد معيّن)
+          <input id="driveFolderId" type="text" placeholder="مثال: 1UqVnlvF79Euefok34dEQLTNmvFKGArC3" />
+        </label>
+
+        <div class="row">
+          <button id="btnConnectDrive" class="primary" type="button">ربط Google Drive</button>
+          <button id="saveSettings" class="ghost" type="submit">حفظ</button>
+          <button id="closeSettings" class="ghost" value="cancel">إغلاق</button>
+        </div>
+
+        <details class="muted">
+          <summary>متقدم</summary>
+          <label>نطاقات OAuth المطلوبة
+            <input id="scopes" type="text"
+              value="https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata" />
+          </label>
+        </details>
+      </form>
+    </dialog>
+
+    <footer class="footer">
+      <span>© 2025 Nouran Senses</span>
+      <span>تطبيق ويب تقدّمي (PWA) — يعمل أوفلاين ويرفع عند الاتصال</span>
+    </footer>
+  </div>
+</body>
+</html>
