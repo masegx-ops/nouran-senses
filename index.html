@@ -5,241 +5,152 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nouran Senses — الحواس الحيّة</title>
   <meta name="theme-color" content="#e24ba8"/>
-
-  <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Scripts (Google + App) -->
   <script defer src="app.js"></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <!-- قفل الشاشة: يظهر أولاً لو مُفعّل -->
-  <div id="lockOverlay" class="lock hidden" aria-hidden="true">
+  <!-- شاشة القفل -->
+  <div id="lockOverlay" class="lock hidden">
     <div class="lock-card">
-      <h2>مرحبًا بك في <span class="brand-mark">Nouran Senses</span></h2>
-      <p class="muted">للحفاظ على خصوصيتك، من فضلك أدخل بيانات الدخول.</p>
+      <h2>🔒 Nouran Senses</h2>
+      <p class="muted">للدخول، أدخل بياناتك</p>
       <label>اسم المستخدم
-        <input id="lockUser" type="text" placeholder="اسم المستخدم" autocomplete="username">
+        <input id="lockUser" type="text" placeholder="اسم المستخدم">
       </label>
-      <label>كلمة المرور / PIN
-        <input id="lockPass" type="password" placeholder="••••" autocomplete="current-password">
+      <label>كلمة المرور
+        <input id="lockPass" type="password" placeholder="••••">
       </label>
       <div class="row">
         <button id="lockEnter" class="btn grad">دخول</button>
-        <button id="lockReset" class="btn ghost">نسيت؟</button>
       </div>
     </div>
   </div>
 
   <header class="top">
-    <div class="title-wrap">
-      <h1 class="app-title"><span class="curvy">Nouran</span> <span class="senses">Senses</span></h1>
-      <div class="tagline">ذاكرة حسّية لحظيّة — موبايل أول، خصوصية أعلى</div>
-    </div>
-    <!-- شريط مصغّرات: تظهر فيه الخصائص المصغّرة -->
-    <div id="miniBar" class="mini-bar" aria-label="مصغّرات الحواس"></div>
+    <h1 class="app-title"><span class="curvy">Nouran</span> <span class="senses">Senses</span></h1>
+    <div id="miniBar" class="mini-bar"></div>
   </header>
 
-  <main class="stage" id="stage">
-    <!-- بانل الكاميرا -->
-    <section id="panel-camera" class="panel active" aria-label="الكاميرا">
+  <main class="stage">
+    <!-- الكاميرا -->
+    <section id="panel-camera" class="panel active">
       <div class="panel-head">
-        <h2>الكاميرا</h2>
-        <div class="panel-actions">
-          <button class="chip" data-minimize="#panel-camera">تصغير</button>
-        </div>
+        <h2>📷 الكاميرا</h2>
+        <button class="chip" data-minimize="#panel-camera">تصغير</button>
       </div>
-      <div class="live">
-        <video id="liveVideo" playsinline autoplay muted></video>
-        <canvas id="previewCanvas" class="hidden"></canvas>
-
-        <div class="mic-meter"><div id="micBar" class="bar"></div></div>
-
-        <div class="ctrls">
-          <button id="startCam" class="btn grad">تشغيل الكاميرا</button>
-          <button id="snap" class="btn ghost">لقطة</button>
-          <button id="stopCam" class="btn ghost">إيقاف</button>
-        </div>
+      <video id="liveVideo" autoplay playsinline muted></video>
+      <canvas id="previewCanvas" class="hidden"></canvas>
+      <div class="mic-meter"><div id="micBar"></div></div>
+      <div class="ctrls">
+        <button id="startCam" class="btn grad">تشغيل</button>
+        <button id="snap" class="btn ghost">لقطة</button>
+        <button id="stopCam" class="btn ghost">إيقاف</button>
       </div>
-      <!-- اللقطات تظهر هنا كمصغّرات -->
       <div id="shotsTray" class="tray"></div>
     </section>
 
-    <!-- بانل الشاشة -->
-    <section id="panel-screen" class="panel" aria-label="تسجيل الشاشة">
+    <!-- تسجيل الشاشة -->
+    <section id="panel-screen" class="panel">
       <div class="panel-head">
-        <h2>الشاشة</h2>
-        <div class="panel-actions">
-          <button class="chip" data-minimize="#panel-screen">تصغير</button>
-        </div>
+        <h2>🖥️ الشاشة</h2>
+        <button class="chip" data-minimize="#panel-screen">تصغير</button>
       </div>
-      <div class="screen">
-        <video id="screenVideo" playsinline controls class="preview hidden"></video>
-        <div class="ctrls">
-          <button id="startScreen" class="btn grad">بدء تسجيل الشاشة</button>
-          <button id="stopScreen" class="btn ghost">إيقاف التسجيل</button>
-        </div>
-        <div class="hint muted">يمكنك متابعة التسجيل مع إشعار النظام… سنضيف أزرار إيقاف/استئناف من الإشعار في الخلفية (مدعوم على أندرويد/كروم).</div>
+      <video id="screenVideo" class="hidden" controls></video>
+      <div class="ctrls">
+        <button id="startScreen" class="btn grad">بدء التسجيل</button>
+        <button id="stopScreen" class="btn ghost">إيقاف</button>
       </div>
     </section>
 
-    <!-- بانل الصوت (مؤشر + إعدادات بسيطة) -->
-    <section id="panel-audio" class="panel" aria-label="الصوت">
+    <!-- الصوت -->
+    <section id="panel-audio" class="panel">
       <div class="panel-head">
-        <h2>الصوت</h2>
-        <div class="panel-actions">
-          <button class="chip" data-minimize="#panel-audio">تصغير</button>
-        </div>
+        <h2>🔊 الصوت</h2>
+        <button class="chip" data-minimize="#panel-audio">تصغير</button>
       </div>
-      <div class="audio">
-        <div class="mic-meter big"><div id="micBarBig" class="bar"></div></div>
-        <p class="muted">يتحرّك المؤشر مع صوتك. لو مش بيتحرّك، افحص أذونات الميكروفون.</p>
-      </div>
+      <div class="mic-meter big"><div id="micBarBig"></div></div>
+      <p class="muted">المؤشر بيتحرّك مع صوتك.</p>
     </section>
 
-    <!-- بانل الباب السحري (شات غامر) -->
-    <section id="panel-chat" class="panel" aria-label="الباب السحري">
+    <!-- الباب السحري -->
+    <section id="panel-chat" class="panel">
       <div class="panel-head">
-        <h2>الباب السحري</h2>
+        <h2>✨ الباب السحري</h2>
         <div class="panel-actions">
           <button class="chip" id="chatMin" data-minimize="#panel-chat">تصغير</button>
           <button class="chip" id="chatPop">نافذة</button>
         </div>
       </div>
-
-      <div id="chatlog" class="chatlog" aria-live="polite"></div>
-
+      <div id="chatlog" class="chatlog"></div>
       <div class="chat-toolbar">
         <input id="chatFile" type="file" multiple accept="image/*,video/*,audio/*" hidden>
-        <button id="btnAttach" class="btn pill">📎 إرفاق</button>
-        <button id="btnVoice" class="btn pill">🎤 صوت</button>
-        <button id="btnGenImage" class="btn pill">🖼️ توليد صورة</button>
+        <button id="btnAttach" class="btn pill">📎</button>
+        <button id="btnVoice" class="btn pill">🎤</button>
+        <button id="btnGenImage" class="btn pill">🖼️</button>
       </div>
-
-      <div id="chatDrafts" class="chat-drafts hidden"></div>
-
       <form id="chatForm" class="chatbox">
-        <input id="chatInput" type="text" placeholder="اكتب سؤالك أو أمرك هنا…" autocomplete="off" />
+        <input id="chatInput" type="text" placeholder="اكتب هنا..." />
         <button type="submit" class="btn grad">إرسال</button>
       </form>
-
-      <!-- ملاحظة: تلميح كلمة السر مخفي ولا يظهر لغيرك -->
       <span id="secretHint" class="hidden">اهلا نوران</span>
     </section>
 
-    <!-- بانل العمليات العامة -->
-    <section id="panel-actions" class="panel" aria-label="العمليات">
+    <!-- العمليات -->
+    <section id="panel-actions" class="panel">
       <div class="panel-head">
-        <h2>العمليات</h2>
-        <div class="panel-actions">
-          <button class="chip" data-minimize="#panel-actions">تصغير</button>
-        </div>
+        <h2>⚙️ العمليات</h2>
+        <button class="chip" data-minimize="#panel-actions">تصغير</button>
       </div>
-
-      <div class="toggles">
-        <label><input type="checkbox" id="autoUpload" checked> رفع تلقائي بعد الالتقاط</label>
-        <label><input type="checkbox" id="autoAnalyze" checked> تحليل تلقائي بعد الرفع</label>
-        <label><input type="checkbox" id="autoDelete"> حذف محلي بعد التحليل</label>
-        <label><input type="checkbox" id="bgSync"> مزامنة في الخلفية (تجريبية)</label>
-      </div>
-
-      <div class="progress">
-        <div class="line">
-          <span>الرفع:</span>
-          <progress id="uploadProgress" max="100" value="0"></progress>
-          <span id="uploadLabel">0%</span>
-        </div>
-        <div class="line">
-          <span>التحليل:</span>
-          <progress id="aiProgress" max="100" value="0"></progress>
-          <span id="aiLabel">0%</span>
-        </div>
-      </div>
-
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <label><input type="checkbox" id="autoUpload" checked> رفع تلقائي</label>
+      <label><input type="checkbox" id="autoAnalyze" checked> تحليل تلقائي</label>
+      <label><input type="checkbox" id="autoDelete"> حذف محلي</label>
+      <label><input type="checkbox" id="bgSync"> مزامنة بالخلفية</label>
+      <progress id="uploadProgress" max="100" value="0"></progress>
+      <progress id="aiProgress" max="100" value="0"></progress>
+      <div id="toast" class="toast"></div>
     </section>
   </main>
 
-  <!-- Dock سفلي (تابات) -->
-  <nav class="dock" aria-label="شريط الحواس">
-    <button class="dock-btn active" data-target="#panel-camera">📷 الكاميرا</button>
-    <button class="dock-btn" data-target="#panel-screen">🖥️ الشاشة</button>
-    <button class="dock-btn" data-target="#panel-audio">🔊 الصوت</button>
-    <button class="dock-btn" data-target="#panel-chat">✨ الباب السحري</button>
+  <!-- Dock سفلي -->
+  <nav class="dock">
+    <button class="dock-btn active" data-target="#panel-camera">📷</button>
+    <button class="dock-btn" data-target="#panel-screen">🖥️</button>
+    <button class="dock-btn" data-target="#panel-audio">🔊</button>
+    <button class="dock-btn" data-target="#panel-chat">✨</button>
     <button id="btnSettings" class="dock-btn settings">⚙️</button>
   </nav>
 
-  <!-- نافذة الإعدادات (تشمل زر تحديث واحد) -->
-  <dialog id="settingsDialog" class="settings">
+  <!-- إعدادات -->
+  <dialog id="settingsDialog">
     <form method="dialog">
       <h3>الإعدادات</h3>
-      <p class="muted">مفاتيحك بتتخزن محليًا على جهازك (localStorage). امسحها من هنا وقت ما تحب.</p>
-
-      <fieldset>
-        <legend>الذكاء الاصطناعي</legend>
-        <label>OpenAI API Key
-          <input id="openaiKey" type="password" placeholder="sk-..." />
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>السحابة (Google Drive)</legend>
-        <label>Google OAuth Client ID
-          <input id="googleClientId" type="text" placeholder="1234567890-xxxx.apps.googleusercontent.com" />
-        </label>
-        <label>Drive Folder ID (اختياري)
-          <input id="driveFolderId" type="text" placeholder="مثال: 1UqVnlvF79Euefok34dEQLTNmvFKGArC3" />
-        </label>
-        <div class="row">
-          <button id="btnConnectDrive" class="btn grad" type="button">ربط Google Drive</button>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>التحديثات (GitHub)</legend>
-        <label>GitHub Token (أو Install Token من GitHub App)
-          <input id="ghToken" type="password" placeholder="ghp_... أو app token" />
-        </label>
-        <label>المستودع (owner/repo)
-          <input id="ghRepo" type="text" placeholder="USERNAME/nouran-senses" />
-        </label>
-        <label>الفرع
-          <input id="ghBranch" type="text" value="main" />
-        </label>
-        <div class="row">
-          <input id="ghFiles" type="file" multiple hidden />
-          <button id="btnPickUpdate" class="btn ghost" type="button">اختر ملفات التحديث…</button>
-          <button id="btnUploadUpdate" class="btn grad" type="button">رفع التحديث</button>
-        </div>
-        <p class="muted small">زر واحد «رفع التحديث» يكفي — الإعدادات الأخرى تفضل مخفية وبسيطة.</p>
-      </fieldset>
-
-      <fieldset>
-        <legend>الخصوصية</legend>
-        <label>تفعيل قفل الشاشة
-          <input id="lockEnabled" type="checkbox" />
-        </label>
-        <label>اسم المستخدم
-          <input id="lockCfgUser" type="text" placeholder="اسم الدخول" />
-        </label>
-        <label>كلمة المرور / PIN
-          <input id="lockCfgPass" type="password" placeholder="••••" />
-        </label>
-      </fieldset>
-
+      <label>OpenAI Key <input id="openaiKey" type="password" /></label>
+      <label>Google Client ID <input id="googleClientId" type="text" /></label>
+      <label>Drive Folder ID <input id="driveFolderId" type="text" /></label>
+      <button id="btnConnectDrive" type="button">ربط السحابة</button>
+      <hr>
+      <h4>التحديثات</h4>
+      <label>GitHub Token <input id="ghToken" type="password" /></label>
+      <label>Repo <input id="ghRepo" type="text" value="USERNAME/nouran-senses" /></label>
+      <label>Branch <input id="ghBranch" type="text" value="main" /></label>
+      <input id="ghFiles" type="file" multiple hidden />
+      <button id="btnPickUpdate" type="button">اختر ملفات</button>
+      <button id="btnUploadUpdate" type="button">رفع التحديث</button>
+      <hr>
+      <h4>الخصوصية</h4>
+      <label><input id="lockEnabled" type="checkbox" /> تفعيل قفل الشاشة</label>
+      <label>مستخدم <input id="lockCfgUser" type="text" /></label>
+      <label>كلمة مرور <input id="lockCfgPass" type="password" /></label>
       <div class="row end">
-        <button id="saveSettings" class="btn grad" value="confirm">حفظ</button>
-        <button id="closeSettings" class="btn ghost" value="cancel">إغلاق</button>
+        <button id="saveSettings" value="confirm">حفظ</button>
+        <button id="closeSettings" value="cancel">إغلاق</button>
       </div>
     </form>
   </dialog>
 
-  <footer class="foot">
-    <span>© 2025 Nouran Senses</span>
-    <span>تطبيق ويب تقدّمي — يعمل أوفلاين ويرفع عند الاتصال</span>
-  </footer>
+  <footer class="foot">© 2025 Nouran Senses</footer>
 </body>
 </html>
