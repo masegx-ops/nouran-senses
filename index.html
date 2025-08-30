@@ -5,141 +5,241 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nouran Senses — الحواس الحيّة</title>
   <meta name="theme-color" content="#e24ba8"/>
+
+  <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
-  <script defer src="app.js"></script>
 
-  <!-- Google APIs (Drive) -->
+  <!-- Scripts (Google + App) -->
+  <script defer src="app.js"></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
-  <!-- Google Identity Services (OAuth) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <div id="app">
-    <header class="topbar">
-      <div class="brand">
-        <span class="logo">✦</span>
-        <span class="title">Nouran Senses</span>
-        <span class="subtitle">باب سِحري بينك وبين العالم</span>
+  <!-- قفل الشاشة: يظهر أولاً لو مُفعّل -->
+  <div id="lockOverlay" class="lock hidden" aria-hidden="true">
+    <div class="lock-card">
+      <h2>مرحبًا بك في <span class="brand-mark">Nouran Senses</span></h2>
+      <p class="muted">للحفاظ على خصوصيتك، من فضلك أدخل بيانات الدخول.</p>
+      <label>اسم المستخدم
+        <input id="lockUser" type="text" placeholder="اسم المستخدم" autocomplete="username">
+      </label>
+      <label>كلمة المرور / PIN
+        <input id="lockPass" type="password" placeholder="••••" autocomplete="current-password">
+      </label>
+      <div class="row">
+        <button id="lockEnter" class="btn grad">دخول</button>
+        <button id="lockReset" class="btn ghost">نسيت؟</button>
       </div>
-      <nav class="ribbon" aria-label="شريط الوظائف">
-        <button id="btnMagicDoor" class="pill" title="المحادثة السحرية">الباب السحري</button>
-        <button id="btnCamera" class="pill" title="الكاميرا الحيّة">الكاميرا</button>
-        <button id="btnScreen" class="pill" title="تسجيل الشاشة">الشاشة</button>
-        <button id="btnMic" class="pill" title="مؤشر الصوت">الصوت</button>
-        <button id="btnDrive" class="pill" title="الربط مع Google Drive">Drive</button>
-        <button id="btnSettings" class="pill accent" title="الإعدادات">إعدادات</button>
-      </nav>
-    </header>
+    </div>
+  </div>
 
-    <main class="grid">
-      <!-- العرض الحي -->
-      <section class="card live">
-        <h2>العرض الحي</h2>
+  <header class="top">
+    <div class="title-wrap">
+      <h1 class="app-title"><span class="curvy">Nouran</span> <span class="senses">Senses</span></h1>
+      <div class="tagline">ذاكرة حسّية لحظيّة — موبايل أول، خصوصية أعلى</div>
+    </div>
+    <!-- شريط مصغّرات: تظهر فيه الخصائص المصغّرة -->
+    <div id="miniBar" class="mini-bar" aria-label="مصغّرات الحواس"></div>
+  </header>
 
-        <div class="live-wrap">
-          <video id="liveVideo" playsinline autoplay muted></video>
-          <canvas id="previewCanvas" class="hidden"></canvas>
-
-          <!-- مؤشر الصوت -->
-          <div class="mic-meter">
-            <div class="bar" id="micBar"></div>
-          </div>
-
-          <!-- تحكّم الكاميرا -->
-          <div class="live-ctrls">
-            <button id="startCam" class="primary">تشغيل الكاميرا</button>
-            <button id="stopCam" class="ghost">إيقاف</button>
-            <button id="snap" class="ghost">لقطة</button>
-          </div>
+  <main class="stage" id="stage">
+    <!-- بانل الكاميرا -->
+    <section id="panel-camera" class="panel active" aria-label="الكاميرا">
+      <div class="panel-head">
+        <h2>الكاميرا</h2>
+        <div class="panel-actions">
+          <button class="chip" data-minimize="#panel-camera">تصغير</button>
         </div>
+      </div>
+      <div class="live">
+        <video id="liveVideo" playsinline autoplay muted></video>
+        <canvas id="previewCanvas" class="hidden"></canvas>
 
-        <!-- تسجيل الشاشة -->
-        <div class="screen-wrap">
-          <video id="screenVideo" playsinline controls class="hidden"></video>
-          <div class="screen-ctrls">
-            <button id="startScreen" class="primary">بدء تسجيل الشاشة</button>
-            <button id="stopScreen" class="ghost">إيقاف التسجيل</button>
-          </div>
+        <div class="mic-meter"><div id="micBar" class="bar"></div></div>
+
+        <div class="ctrls">
+          <button id="startCam" class="btn grad">تشغيل الكاميرا</button>
+          <button id="snap" class="btn ghost">لقطة</button>
+          <button id="stopCam" class="btn ghost">إيقاف</button>
         </div>
-      </section>
+      </div>
+      <!-- اللقطات تظهر هنا كمصغّرات -->
+      <div id="shotsTray" class="tray"></div>
+    </section>
 
-      <!-- الباب السحري (شات خاص وإشارات سرية) -->
-      <aside class="card chat" id="magicDoor">
+    <!-- بانل الشاشة -->
+    <section id="panel-screen" class="panel" aria-label="تسجيل الشاشة">
+      <div class="panel-head">
+        <h2>الشاشة</h2>
+        <div class="panel-actions">
+          <button class="chip" data-minimize="#panel-screen">تصغير</button>
+        </div>
+      </div>
+      <div class="screen">
+        <video id="screenVideo" playsinline controls class="preview hidden"></video>
+        <div class="ctrls">
+          <button id="startScreen" class="btn grad">بدء تسجيل الشاشة</button>
+          <button id="stopScreen" class="btn ghost">إيقاف التسجيل</button>
+        </div>
+        <div class="hint muted">يمكنك متابعة التسجيل مع إشعار النظام… سنضيف أزرار إيقاف/استئناف من الإشعار في الخلفية (مدعوم على أندرويد/كروم).</div>
+      </div>
+    </section>
+
+    <!-- بانل الصوت (مؤشر + إعدادات بسيطة) -->
+    <section id="panel-audio" class="panel" aria-label="الصوت">
+      <div class="panel-head">
+        <h2>الصوت</h2>
+        <div class="panel-actions">
+          <button class="chip" data-minimize="#panel-audio">تصغير</button>
+        </div>
+      </div>
+      <div class="audio">
+        <div class="mic-meter big"><div id="micBarBig" class="bar"></div></div>
+        <p class="muted">يتحرّك المؤشر مع صوتك. لو مش بيتحرّك، افحص أذونات الميكروفون.</p>
+      </div>
+    </section>
+
+    <!-- بانل الباب السحري (شات غامر) -->
+    <section id="panel-chat" class="panel" aria-label="الباب السحري">
+      <div class="panel-head">
         <h2>الباب السحري</h2>
-        <div class="chatlog" id="chatlog" aria-live="polite"></div>
-        <form id="chatForm" class="chatbox">
-          <input id="chatInput" type="text" placeholder="اكتب سرك أو أمرك هنا..." />
-          <button type="submit" class="primary">إرسال</button>
-        </form>
-        <div class="hint">اكتب: <code>اهلا نوران</code> لتفعيل الوضع الخاص</div>
-      </aside>
+        <div class="panel-actions">
+          <button class="chip" id="chatMin" data-minimize="#panel-chat">تصغير</button>
+          <button class="chip" id="chatPop">نافذة</button>
+        </div>
+      </div>
 
-      <!-- الحالة والعمليات -->
-      <section class="card actions">
+      <div id="chatlog" class="chatlog" aria-live="polite"></div>
+
+      <div class="chat-toolbar">
+        <input id="chatFile" type="file" multiple accept="image/*,video/*,audio/*" hidden>
+        <button id="btnAttach" class="btn pill">📎 إرفاق</button>
+        <button id="btnVoice" class="btn pill">🎤 صوت</button>
+        <button id="btnGenImage" class="btn pill">🖼️ توليد صورة</button>
+      </div>
+
+      <div id="chatDrafts" class="chat-drafts hidden"></div>
+
+      <form id="chatForm" class="chatbox">
+        <input id="chatInput" type="text" placeholder="اكتب سؤالك أو أمرك هنا…" autocomplete="off" />
+        <button type="submit" class="btn grad">إرسال</button>
+      </form>
+
+      <!-- ملاحظة: تلميح كلمة السر مخفي ولا يظهر لغيرك -->
+      <span id="secretHint" class="hidden">اهلا نوران</span>
+    </section>
+
+    <!-- بانل العمليات العامة -->
+    <section id="panel-actions" class="panel" aria-label="العمليات">
+      <div class="panel-head">
         <h2>العمليات</h2>
-        <div class="toggles">
-          <label><input type="checkbox" id="autoUpload" checked/> رفع تلقائي بعد الالتقاط</label>
-          <label><input type="checkbox" id="autoAnalyze" checked/> تحليل تلقائي بعد الرفع</label>
-          <label><input type="checkbox" id="autoDelete" /> حذف محلي بعد التحليل</label>
-          <label><input type="checkbox" id="bgSync" /> مزامنة في الخلفية (تجريبية)</label>
+        <div class="panel-actions">
+          <button class="chip" data-minimize="#panel-actions">تصغير</button>
         </div>
+      </div>
 
-        <div class="progress">
-          <div class="line">
-            <span>الرفع:</span>
-            <progress id="uploadProgress" max="100" value="0"></progress>
-            <span id="uploadLabel">0%</span>
-          </div>
-          <div class="line">
-            <span>التحليل:</span>
-            <progress id="aiProgress" max="100" value="0"></progress>
-            <span id="aiLabel">0%</span>
-          </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="autoUpload" checked> رفع تلقائي بعد الالتقاط</label>
+        <label><input type="checkbox" id="autoAnalyze" checked> تحليل تلقائي بعد الرفع</label>
+        <label><input type="checkbox" id="autoDelete"> حذف محلي بعد التحليل</label>
+        <label><input type="checkbox" id="bgSync"> مزامنة في الخلفية (تجريبية)</label>
+      </div>
+
+      <div class="progress">
+        <div class="line">
+          <span>الرفع:</span>
+          <progress id="uploadProgress" max="100" value="0"></progress>
+          <span id="uploadLabel">0%</span>
         </div>
+        <div class="line">
+          <span>التحليل:</span>
+          <progress id="aiProgress" max="100" value="0"></progress>
+          <span id="aiLabel">0%</span>
+        </div>
+      </div>
 
-        <div id="toast" class="toast"></div>
-      </section>
-    </main>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </section>
+  </main>
 
-    <!-- نافذة الإعدادات -->
-    <dialog id="settingsDialog">
-      <form method="dialog" class="settings">
-        <h3>الإعدادات والربط</h3>
-        <p class="muted">مفاتيحك بتتخزن محليًا على جهازك (localStorage) — متتحطش في الكود أبدًا.</p>
+  <!-- Dock سفلي (تابات) -->
+  <nav class="dock" aria-label="شريط الحواس">
+    <button class="dock-btn active" data-target="#panel-camera">📷 الكاميرا</button>
+    <button class="dock-btn" data-target="#panel-screen">🖥️ الشاشة</button>
+    <button class="dock-btn" data-target="#panel-audio">🔊 الصوت</button>
+    <button class="dock-btn" data-target="#panel-chat">✨ الباب السحري</button>
+    <button id="btnSettings" class="dock-btn settings">⚙️</button>
+  </nav>
 
+  <!-- نافذة الإعدادات (تشمل زر تحديث واحد) -->
+  <dialog id="settingsDialog" class="settings">
+    <form method="dialog">
+      <h3>الإعدادات</h3>
+      <p class="muted">مفاتيحك بتتخزن محليًا على جهازك (localStorage). امسحها من هنا وقت ما تحب.</p>
+
+      <fieldset>
+        <legend>الذكاء الاصطناعي</legend>
         <label>OpenAI API Key
           <input id="openaiKey" type="password" placeholder="sk-..." />
         </label>
+      </fieldset>
 
-        <label>Google OAuth Client ID (للربط مع Drive)
-          <input id="googleClientId" type="text" placeholder="1234567890-xxxxxxxx.apps.googleusercontent.com" />
+      <fieldset>
+        <legend>السحابة (Google Drive)</legend>
+        <label>Google OAuth Client ID
+          <input id="googleClientId" type="text" placeholder="1234567890-xxxx.apps.googleusercontent.com" />
         </label>
-
-        <label>Drive Folder ID (اختياري للحفظ في مجلد معيّن)
+        <label>Drive Folder ID (اختياري)
           <input id="driveFolderId" type="text" placeholder="مثال: 1UqVnlvF79Euefok34dEQLTNmvFKGArC3" />
         </label>
-
         <div class="row">
-          <button id="btnConnectDrive" class="primary" type="button">ربط Google Drive</button>
-          <button id="saveSettings" class="ghost" type="submit">حفظ</button>
-          <button id="closeSettings" class="ghost" value="cancel">إغلاق</button>
+          <button id="btnConnectDrive" class="btn grad" type="button">ربط Google Drive</button>
         </div>
+      </fieldset>
 
-        <details class="muted">
-          <summary>متقدم</summary>
-          <label>نطاقات OAuth المطلوبة
-            <input id="scopes" type="text"
-              value="https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata" />
-          </label>
-        </details>
-      </form>
-    </dialog>
+      <fieldset>
+        <legend>التحديثات (GitHub)</legend>
+        <label>GitHub Token (أو Install Token من GitHub App)
+          <input id="ghToken" type="password" placeholder="ghp_... أو app token" />
+        </label>
+        <label>المستودع (owner/repo)
+          <input id="ghRepo" type="text" placeholder="USERNAME/nouran-senses" />
+        </label>
+        <label>الفرع
+          <input id="ghBranch" type="text" value="main" />
+        </label>
+        <div class="row">
+          <input id="ghFiles" type="file" multiple hidden />
+          <button id="btnPickUpdate" class="btn ghost" type="button">اختر ملفات التحديث…</button>
+          <button id="btnUploadUpdate" class="btn grad" type="button">رفع التحديث</button>
+        </div>
+        <p class="muted small">زر واحد «رفع التحديث» يكفي — الإعدادات الأخرى تفضل مخفية وبسيطة.</p>
+      </fieldset>
 
-    <footer class="footer">
-      <span>© 2025 Nouran Senses</span>
-      <span>تطبيق ويب تقدّمي (PWA) — يعمل أوفلاين ويرفع عند الاتصال</span>
-    </footer>
-  </div>
+      <fieldset>
+        <legend>الخصوصية</legend>
+        <label>تفعيل قفل الشاشة
+          <input id="lockEnabled" type="checkbox" />
+        </label>
+        <label>اسم المستخدم
+          <input id="lockCfgUser" type="text" placeholder="اسم الدخول" />
+        </label>
+        <label>كلمة المرور / PIN
+          <input id="lockCfgPass" type="password" placeholder="••••" />
+        </label>
+      </fieldset>
+
+      <div class="row end">
+        <button id="saveSettings" class="btn grad" value="confirm">حفظ</button>
+        <button id="closeSettings" class="btn ghost" value="cancel">إغلاق</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="foot">
+    <span>© 2025 Nouran Senses</span>
+    <span>تطبيق ويب تقدّمي — يعمل أوفلاين ويرفع عند الاتصال</span>
+  </footer>
 </body>
 </html>
