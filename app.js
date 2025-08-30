@@ -11,12 +11,12 @@ const state = {
   driveFolderId: localStorage.getItem("DRIVE_FOLDER_ID") || "",
   ghToken: localStorage.getItem("GH_TOKEN") || "",
   ghRepo: localStorage.getItem("GH_REPO") || "",
-  ghBranch: localStorage.getItem("GH_BRANCH") || "main",
-  locked: false
+  ghBranch: localStorage.getItem("GH_BRANCH") || "main"
 };
 
 function toast(msg, ok=true){
   const t = $("#toast");
+  if(!t) return;
   t.textContent = msg;
   t.className = "toast show";
   t.style.background = ok ? "#1b1b1b" : "#a0183a";
@@ -41,6 +41,7 @@ $("#stopCam")?.addEventListener("click", ()=>{
 });
 $("#snap")?.addEventListener("click", ()=>{
   const v=$("#liveVideo");
+  if(!v.videoWidth) { toast("الكاميرا غير مفعلة",false); return; }
   const c=$("#previewCanvas");
   const ctx=c.getContext("2d");
   c.width=v.videoWidth; c.height=v.videoHeight;
@@ -159,6 +160,9 @@ $("#saveSettings")?.addEventListener("click",()=>{
   localStorage.setItem("GH_TOKEN",$("#ghToken").value);
   localStorage.setItem("GH_REPO",$("#ghRepo").value);
   localStorage.setItem("GH_BRANCH",$("#ghBranch").value);
+  localStorage.setItem("LOCK_ENABLED", $("#lockEnabled").checked);
+  localStorage.setItem("LOCK_USER", $("#lockCfgUser").value);
+  localStorage.setItem("LOCK_PASS", $("#lockCfgPass").value);
   toast("تم حفظ الإعدادات");
 });
 $("#btnConnectDrive")?.addEventListener("click",()=>toast("تم الربط التجريبي مع Google Drive"));
@@ -172,13 +176,18 @@ if(localStorage.getItem("LOCK_ENABLED")==="true"){
   $("#lockOverlay").classList.remove("hidden");
   $("#lockEnter").onclick=()=>{
     const u=$("#lockUser").value, p=$("#lockPass").value;
-    if(u===localStorage.getItem("LOCK_USER") && p===localStorage.getItem("LOCK_PASS")){
+    const savedU = localStorage.getItem("LOCK_USER");
+    const savedP = localStorage.getItem("LOCK_PASS");
+    if(!savedU || !savedP){
+      toast("⚠️ من فضلك احفظ اسم مستخدم وكلمة مرور من الإعدادات أولاً", false);
       $("#lockOverlay").classList.add("hidden");
-    }else toast("بيانات غير صحيحة",false);
+      return;
+    }
+    if(u===savedU && p===savedP){
+      $("#lockOverlay").classList.add("hidden");
+      toast("✅ تم تسجيل الدخول");
+    }else{
+      toast("بيانات غير صحيحة",false);
+    }
   };
 }
-$("#lockEnabled")?.addEventListener("change",e=>{
-  localStorage.setItem("LOCK_ENABLED",e.target.checked);
-});
-$("#lockCfgUser")?.addEventListener("input",e=>localStorage.setItem("LOCK_USER",e.target.value));
-$("#lockCfgPass")?.addEventListener("input",e=>localStorage.setItem("LOCK_PASS",e.target.value));
