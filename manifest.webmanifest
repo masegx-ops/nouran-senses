@@ -1,5 +1,5 @@
 {
-  "name": "Nouran Senses",
+  "name": "Nouran Senses — الحواس الحيّة",
   "short_name": "N.Senses",
   "lang": "ar",
   "dir": "rtl",
@@ -7,8 +7,13 @@
   "display": "standalone",
   "background_color": "#fdf3f7",
   "theme_color": "#e24ba8",
-  "description": "تطبيق ويب تقدمي (PWA) للحواس: كاميرا، شاشة، صوت، باب سحري، رفع إلى Google Drive وتحليل بالذكاء الاصطناعي.",
+  "description": "تطبيق ويب تقدّمي يجمع الكاميرا، تسجيل الشاشة، الصوت، الباب السحري، والرفع السهل للسحابة والتحديث الذاتي للنسخة.",
   "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/4151/4151451.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
     {
       "src": "https://cdn-icons-png.flaticon.com/512/4151/4151451.png",
       "sizes": "512x512",
