@@ -2,18 +2,6 @@
 const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
 
-const state = {
-  streams: { cam: null, screen: null },
-  recorder: null, chunks: [],
-  googleToken: null,
-  openaiKey: localStorage.getItem("OPENAI_KEY") || "",
-  googleClientId: localStorage.getItem("GOOGLE_CLIENT_ID") || "",
-  driveFolderId: localStorage.getItem("DRIVE_FOLDER_ID") || "",
-  ghToken: localStorage.getItem("GH_TOKEN") || "",
-  ghRepo: localStorage.getItem("GH_REPO") || "",
-  ghBranch: localStorage.getItem("GH_BRANCH") || "main"
-};
-
 function toast(msg, ok=true){
   const t = $("#toast");
   if(!t) return;
@@ -27,21 +15,20 @@ function toast(msg, ok=true){
 $("#startCam")?.addEventListener("click", async ()=>{
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
-    state.streams.cam = stream;
     $("#liveVideo").srcObject = stream;
-    startMicLevel(stream);
     toast("الكاميرا اشتغلت 🎥");
-  } catch(e){ toast("فشل تشغيل الكاميرا: "+e.message, false); }
+  } catch(e){ toast("فشل تشغيل الكاميرا", false); }
 });
 $("#stopCam")?.addEventListener("click", ()=>{
-  stopStream(state.streams.cam);
-  $("#liveVideo").srcObject = null;
-  stopMicLevel();
-  toast("تم إيقاف الكاميرا");
+  if($("#liveVideo").srcObject){
+    $("#liveVideo").srcObject.getTracks().forEach(t=>t.stop());
+    $("#liveVideo").srcObject = null;
+    toast("تم إيقاف الكاميرا");
+  }
 });
 $("#snap")?.addEventListener("click", ()=>{
   const v=$("#liveVideo");
-  if(!v.videoWidth) { toast("الكاميرا غير مفعلة",false); return; }
+  if(!v.videoWidth){ toast("شغّل الكاميرا الأول",false); return; }
   const c=$("#previewCanvas");
   const ctx=c.getContext("2d");
   c.width=v.videoWidth; c.height=v.videoHeight;
@@ -56,58 +43,27 @@ $("#snap")?.addEventListener("click", ()=>{
 });
 
 // ========== تسجيل الشاشة ==========
+let rec, chunks=[];
 $("#startScreen")?.addEventListener("click", async ()=>{
   try{
     const stream=await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
-    state.streams.screen=stream;
-    startRecording(stream);
+    rec=new MediaRecorder(stream);
+    chunks=[];
+    rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
+    rec.onstop=()=>{
+      const blob=new Blob(chunks,{type:"video/webm"});
+      const url=URL.createObjectURL(blob);
+      const v=$("#screenVideo");
+      v.src=url; v.classList.remove("hidden");
+      toast("معاينة التسجيل جاهزة 🎬");
+    };
+    rec.start();
     toast("بدأ تسجيل الشاشة 🖥️");
-  }catch(e){ toast("فشل: "+e.message, false); }
+  }catch(e){ toast("فشل: "+e.message,false); }
 });
 $("#stopScreen")?.addEventListener("click", ()=>{
-  stopRecording();
-  stopStream(state.streams.screen);
+  if(rec && rec.state!=="inactive") rec.stop();
 });
-
-function startRecording(stream){
-  state.chunks=[];
-  const rec=new MediaRecorder(stream);
-  state.recorder=rec;
-  rec.ondataavailable=e=>{ if(e.data.size>0) state.chunks.push(e.data); };
-  rec.onstop=()=>{
-    const blob=new Blob(state.chunks,{type:"video/webm"});
-    const url=URL.createObjectURL(blob);
-    const v=$("#screenVideo");
-    v.src=url; v.classList.remove("hidden");
-    toast("معاينة التسجيل جاهزة 🎬");
-    state.chunks=[];
-  };
-  rec.start();
-}
-function stopRecording(){
-  if(state.recorder && state.recorder.state!=="inactive") state.recorder.stop();
-}
-function stopStream(s){ if(s) s.getTracks().forEach(t=>t.stop()); }
-
-// ========== الصوت ==========
-let audioCtx, analyser, raf;
-function startMicLevel(stream){
-  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-  const src=audioCtx.createMediaStreamSource(stream);
-  analyser=audioCtx.createAnalyser(); analyser.fftSize=512;
-  src.connect(analyser);
-  const data=new Uint8Array(analyser.frequencyBinCount);
-  const loop=()=>{
-    analyser.getByteFrequencyData(data);
-    const avg=data.reduce((a,b)=>a+b,0)/data.length;
-    const pct=Math.min(100, Math.round((avg/255)*100));
-    $("#micBar").style.width=pct+"%";
-    $("#micBarBig").style.width=pct+"%";
-    raf=requestAnimationFrame(loop);
-  };
-  loop();
-}
-function stopMicLevel(){ if(raf) cancelAnimationFrame(raf); if(audioCtx) audioCtx.close(); }
 
 // ========== الباب السحري ==========
 function appendMsg(role,text){
@@ -127,7 +83,7 @@ $("#chatForm")?.addEventListener("submit",e=>{
   appendMsg("assistant","(رد تجريبي من نوران)");
 });
 
-// ========== Dock Panels ==========
+// ========== Dock ==========
 $$(".dock-btn").forEach(btn=>{
   btn.addEventListener("click",()=>{
     $$(".dock-btn").forEach(b=>b.classList.remove("active"));
@@ -138,17 +94,6 @@ $$(".dock-btn").forEach(btn=>{
       $(target).classList.add("active");
     }
     if(btn.id==="btnSettings") $("#settingsDialog").showModal();
-  });
-});
-$$("[data-minimize]")?.forEach(ch=>{
-  ch.addEventListener("click",()=>{
-    const sel=ch.dataset.minimize;
-    $(sel).classList.remove("active");
-    const mini=document.createElement("button");
-    mini.textContent=$(sel).querySelector("h2").textContent;
-    mini.className="chip";
-    mini.onclick=()=>{ $(sel).classList.add("active"); mini.remove(); };
-    $("#miniBar").appendChild(mini);
   });
 });
 
@@ -163,13 +108,11 @@ $("#saveSettings")?.addEventListener("click",()=>{
   localStorage.setItem("LOCK_ENABLED", $("#lockEnabled").checked);
   localStorage.setItem("LOCK_USER", $("#lockCfgUser").value);
   localStorage.setItem("LOCK_PASS", $("#lockCfgPass").value);
-  toast("تم حفظ الإعدادات");
+  toast("تم حفظ الإعدادات ✅");
 });
-$("#btnConnectDrive")?.addEventListener("click",()=>toast("تم الربط التجريبي مع Google Drive"));
+$("#btnConnectDrive")?.addEventListener("click",()=>toast("ربط Google Drive (تجريبي)"));
 $("#btnPickUpdate")?.addEventListener("click",()=>$("#ghFiles").click());
-$("#btnUploadUpdate")?.addEventListener("click",()=>{
-  toast("رفع التحديث (محاكاة) ✅");
-});
+$("#btnUploadUpdate")?.addEventListener("click",()=>toast("رفع التحديث (محاكاة) ✅"));
 
 // ========== قفل الشاشة ==========
 if(localStorage.getItem("LOCK_ENABLED")==="true"){
@@ -178,16 +121,23 @@ if(localStorage.getItem("LOCK_ENABLED")==="true"){
     const u=$("#lockUser").value, p=$("#lockPass").value;
     const savedU = localStorage.getItem("LOCK_USER");
     const savedP = localStorage.getItem("LOCK_PASS");
+
+    // لو مفيش بيانات متسجلة
     if(!savedU || !savedP){
       toast("⚠️ من فضلك احفظ اسم مستخدم وكلمة مرور من الإعدادات أولاً", false);
       $("#lockOverlay").classList.add("hidden");
       return;
     }
+
+    // لو البيانات صح
     if(u===savedU && p===savedP){
       $("#lockOverlay").classList.add("hidden");
       toast("✅ تم تسجيل الدخول");
     }else{
-      toast("بيانات غير صحيحة",false);
+      toast("❌ بيانات غير صحيحة", false);
     }
   };
+} else {
+  // لو القفل مش متفعّل أصلاً
+  $("#lockOverlay")?.classList.add("hidden");
 }
