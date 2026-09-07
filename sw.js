@@ -1,5 +1,5 @@
 // Service Worker — Nouran Senses
-const CACHE = 'nshell-v5';
+const CACHE = 'nshell-v6';
 const SHELL = [
   '/',
   '/index.html',
@@ -10,6 +10,8 @@ const SHELL = [
   '/causal-ablation-batch.js',
   '/path-dependence.js',
   '/context-memory.js',
+  '/context-manager.js',
+  '/reality-gate.js',
   '/manifest.webmanifest'
 ];
 
