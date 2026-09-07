@@ -1,12 +1,11 @@
-// Service Worker — Nouran Senses (basic shell cache + hooks)
-// مبدئي: هنطوّره لاحقًا لإشعارات التحكم في التسجيل
-
-const CACHE = 'nshell-v2';
+// Service Worker — Nouran Senses
+const CACHE = 'nshell-v3';
 const SHELL = [
   '/',
   '/index.html',
   '/style.css',
   '/app.js',
+  '/continuity-core.js',
   '/manifest.webmanifest'
 ];
 
@@ -16,26 +15,16 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-    ))
-  );
+  e.waitUntil(caches.keys().then(keys => Promise.all(
+    keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+  )));
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (e) => {
-  const { request } = e;
-  // شبكة أولاً للملفات الديناميكية، وكاش احتياطي للـ shell
-  e.respondWith(
-    fetch(request).catch(() => caches.match(request))
-  );
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
 
-// إشعارات — أساس (هنفعّل أزرار الإيقاف/الاستئناف لاحقًا)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  // مثال: نبعث أمر للصفحة عبر BroadcastChannel (هنكمّلها في التحديث القادم)
-  // const ch = new BroadcastChannel('ns-control');
-  // ch.postMessage({ action: 'toggle-record' });
 });
