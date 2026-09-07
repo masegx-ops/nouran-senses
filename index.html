@@ -64,6 +64,16 @@
       <div class="panel-head"><h2>⚙️ العمليات</h2><button class="chip" data-minimize="#panel-actions">تصغير</button></div>
       <label><input type="checkbox" id="autoUpload" checked> رفع تلقائي</label><label><input type="checkbox" id="autoAnalyze" checked> تحليل تلقائي</label><label><input type="checkbox" id="autoDelete"> حذف محلي</label><label><input type="checkbox" id="bgSync"> مزامنة بالخلفية</label>
       <progress id="uploadProgress" max="100" value="0"></progress><progress id="aiProgress" max="100" value="0"></progress><div id="toast" class="toast"></div>
+      <hr>
+      <h3>🧬 استمرارية نوران</h3>
+      <p class="muted">نسخة قابلة للنقل من الحالة — بدون مفاتيح أو كلمات مرور.</p>
+      <div class="ctrls">
+        <button id="exportContinuity" class="btn grad" type="button">حفظ نسخة</button>
+        <button id="importContinuity" class="btn ghost" type="button">استعادة نسخة</button>
+        <button id="restoreLocalBackup" class="btn ghost" type="button">تراجع محلي</button>
+      </div>
+      <input id="continuityFile" type="file" accept="application/json,.json" hidden>
+      <pre id="continuityHealth" class="muted" style="white-space:pre-wrap"></pre>
     </section>
   </main>
   <nav class="dock"><button class="dock-btn active" data-target="#panel-camera">📷</button><button class="dock-btn" data-target="#panel-screen">🖥️</button><button class="dock-btn" data-target="#panel-audio">🔊</button><button class="dock-btn" data-target="#panel-chat">✨</button><button id="btnSettings" class="dock-btn settings">⚙️</button></nav>
@@ -71,5 +81,29 @@
     <form method="dialog"><h3>الإعدادات</h3><label>OpenAI Key <input id="openaiKey" type="password" /></label><label>Google Client ID <input id="googleClientId" type="text" /></label><label>Drive Folder ID <input id="driveFolderId" type="text" /></label><button id="btnConnectDrive" type="button">ربط السحابة</button><hr><h4>التحديثات</h4><label>GitHub Token <input id="ghToken" type="password" /></label><label>Repo <input id="ghRepo" type="text" value="USERNAME/nouran-senses" /></label><label>Branch <input id="ghBranch" type="text" value="main" /></label><input id="ghFiles" type="file" multiple hidden><button id="btnPickUpdate" type="button">اختر ملفات</button><button id="btnUploadUpdate" type="button">رفع التحديث</button><hr><h4>الخصوصية</h4><label><input id="lockEnabled" type="checkbox" /> تفعيل قفل الشاشة</label><label>مستخدم <input id="lockCfgUser" type="text" /></label><label>كلمة مرور <input id="lockCfgPass" type="password" /></label><div class="row end"><button id="saveSettings" value="confirm">حفظ</button><button id="closeSettings" value="cancel">إغلاق</button></div></form>
   </dialog>
   <footer class="foot">© 2025 Nouran Senses</footer>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const $ = id => document.getElementById(id);
+      const showHealth = () => {
+        try { $('continuityHealth').textContent = JSON.stringify(NouranContinuity.health(), null, 2); } catch (_) {}
+      };
+      $('exportContinuity')?.addEventListener('click', async () => {
+        try { await NouranContinuity.exportState(true); showHealth(); } catch (e) { alert('تعذر حفظ النسخة: ' + e.message); }
+      });
+      $('importContinuity')?.addEventListener('click', () => $('continuityFile')?.click());
+      $('continuityFile')?.addEventListener('change', async e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try { await NouranContinuity.importState(file); showHealth(); alert('تمت استعادة الحالة.'); }
+        catch (err) { alert('فشل الاستعادة: ' + err.message); }
+        e.target.value = '';
+      });
+      $('restoreLocalBackup')?.addEventListener('click', () => {
+        try { NouranContinuity.restoreLocalBackup(); showHealth(); alert('تم التراجع إلى آخر نسخة محلية محفوظة قبل الاستعادة.'); }
+        catch (e) { alert('لا توجد نسخة محلية للتراجع إليها.'); }
+      });
+      showHealth();
+    });
+  </script>
 </body>
 </html>
