@@ -1,10 +1,10 @@
-// ===== Nouran Senses - app.js (v3: lock fix + SW refresh + robust bindings) =====
+// ===== Nouran Senses - app.js (v4: continuity event integration) =====
 document.addEventListener("DOMContentLoaded", () => {
-  // -------- أدوات صغيرة --------
   const $ = s => document.querySelector(s);
   const $$ = s => document.querySelectorAll(s);
+  const C = window.NouranContinuity;
+  const event = (type, payload = {}) => { try { C?.record(type, payload); } catch (e) { console.warn("[Continuity]", e); } };
 
-  // جرّب نحدّث الـ Service Worker عشان ما يفضّلش كاش قديم
   if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
     navigator.serviceWorker.getRegistration().then(reg => reg?.update?.());
   }
@@ -18,65 +18,49 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => (t.className = "toast"), 2500);
   }
 
-  console.log("%c[Nouran] JS v3 loaded", "color:#e24ba8; font-weight:700");
+  console.log("%c[Nouran] JS v4 loaded", "color:#e24ba8; font-weight:700");
+  event("app_ready", { version: 4 });
 
-  // ================== قفل الشاشة (إصلاح نهائي) ==================
+  // ================== قفل الشاشة ==================
   const lockOverlay = $("#lockOverlay");
-  const lockEnterBtn = $("#lockEnter");
-
-  // دالة تربط الحدث حتى لو العنصر اتأخّر
   function bindLockEnter() {
     const btn = $("#lockEnter");
     if (!btn) return false;
     btn.onclick = () => {
-      console.log("[Lock] Enter clicked");
       toast("جاري التحقق …");
       const u = $("#lockUser")?.value || "";
       const p = $("#lockPass")?.value || "";
       const savedU = localStorage.getItem("LOCK_USER");
       const savedP = localStorage.getItem("LOCK_PASS");
       const enabled = localStorage.getItem("LOCK_ENABLED") === "true";
-
-      // لو القفل متفعّل ومفيش بيانات محفوظة: دخل مؤقّت واطلب منه يحفظ
       if (enabled && (!savedU || !savedP)) {
         toast("⚠️ احفظ اسم مستخدم وكلمة مرور من الإعدادات أولاً", false);
         lockOverlay?.classList.add("hidden");
-        console.warn("[Lock] Enabled but no creds stored -> soft open");
+        event("lock_soft_open", { reason: "enabled_without_credentials" });
         return;
       }
-      // لو القفل مش متفعّل أصلاً: افتح على طول
       if (!enabled) {
         lockOverlay?.classList.add("hidden");
         toast("القفل غير مفعّل ✅");
-        console.log("[Lock] Not enabled -> open");
+        event("lock_open", { mode: "disabled" });
         return;
       }
-      // تحقق عادي
       if (u === savedU && p === savedP) {
         lockOverlay?.classList.add("hidden");
         toast("✅ تم تسجيل الدخول");
-        console.log("[Lock] Success");
+        event("lock_open", { mode: "verified" });
       } else {
         toast("❌ بيانات غير صحيحة", false);
-        console.warn("[Lock] Wrong creds");
+        event("lock_failed", {});
       }
     };
     return true;
   }
-
-  // أربط الآن، ولو العنصر مش موجود جرّب كل 300ms لحد ما يبان
   if (!bindLockEnter()) {
-    const iv = setInterval(() => {
-      if (bindLockEnter()) clearInterval(iv);
-    }, 300);
+    const iv = setInterval(() => { if (bindLockEnter()) clearInterval(iv); }, 300);
   }
-
-  // أظهر القفل حسب الإعدادات
-  if (localStorage.getItem("LOCK_ENABLED") === "true") {
-    lockOverlay?.classList.remove("hidden");
-  } else {
-    lockOverlay?.classList.add("hidden");
-  }
+  if (localStorage.getItem("LOCK_ENABLED") === "true") lockOverlay?.classList.remove("hidden");
+  else lockOverlay?.classList.add("hidden");
 
   // ================== الكاميرا ==================
   $("#startCam")?.addEventListener("click", async () => {
@@ -85,9 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
       $("#liveVideo").srcObject = stream;
       startMicLevel(stream);
       toast("الكاميرا اشتغلت 🎥");
-    } catch (e) { toast("فشل تشغيل الكاميرا", false); console.error(e); }
+      event("camera_started", { video: true, audio: true });
+    } catch (e) { toast("فشل تشغيل الكاميرا", false); event("camera_start_failed", { message: e?.message || String(e) }); console.error(e); }
   });
-
   $("#stopCam")?.addEventListener("click", () => {
     const v = $("#liveVideo");
     if (v?.srcObject) {
@@ -95,12 +79,12 @@ document.addEventListener("DOMContentLoaded", () => {
       v.srcObject = null;
       stopMicLevel();
       toast("تم إيقاف الكاميرا");
+      event("camera_stopped", {});
     }
   });
-
   $("#snap")?.addEventListener("click", () => {
     const v = $("#liveVideo");
-    if (!v?.videoWidth) { toast("شغّل الكاميرا الأول", false); return; }
+    if (!v?.videoWidth) { toast("شغّل الكاميرا الأول", false); event("snapshot_failed", { reason: "camera_not_ready" }); return; }
     const c = $("#previewCanvas");
     const ctx = c.getContext("2d");
     c.width = v.videoWidth; c.height = v.videoHeight;
@@ -111,6 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       img.src = url; img.className = "thumb";
       $("#shotsTray").appendChild(img);
       toast("لقطة محفوظة 📸");
+      event("snapshot_created", { width: c.width, height: c.height });
     }, "image/jpeg", 0.9);
   });
 
@@ -128,15 +113,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const v = $("#screenVideo");
         v.src = url; v.classList.remove("hidden");
         toast("معاينة التسجيل جاهزة 🎬");
+        event("screen_recording_stopped", { bytes: blob.size });
       };
       rec.start();
       toast("بدأ تسجيل الشاشة 🖥️");
-    } catch (e) { toast("فشل: " + e.message, false); console.error(e); }
+      event("screen_recording_started", {});
+    } catch (e) { toast("فشل: " + e.message, false); event("screen_recording_failed", { message: e?.message || String(e) }); console.error(e); }
   });
-
-  $("#stopScreen")?.addEventListener("click", () => {
-    if (rec && rec.state !== "inactive") rec.stop();
-  });
+  $("#stopScreen")?.addEventListener("click", () => { if (rec && rec.state !== "inactive") rec.stop(); });
 
   // ================== مؤشر الصوت ==================
   let audioCtx, analyser, raf;
@@ -175,8 +159,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!text) return;
     $("#chatInput").value = "";
     appendMsg("user", text);
-    if (text === "اهلا نوران") { appendMsg("assistant", "الوضع الخاص مفعّل ✨"); return; }
+    event("chat_input", { textLength: text.length });
+    if (text === "اهلا نوران") {
+      appendMsg("assistant", "الوضع الخاص مفعّل ✨");
+      event("chat_response", { kind: "greeting" });
+      return;
+    }
     appendMsg("assistant", "(رد تجريبي من نوران)");
+    event("chat_response", { kind: "demo" });
   });
 
   // ================== الـ Dock ==================
@@ -190,10 +180,11 @@ document.addEventListener("DOMContentLoaded", () => {
         $(target).classList.add("active");
       }
       if (btn.id === "btnSettings") $("#settingsDialog").showModal();
+      event("navigation", { button: btn.id || null, target: target || null });
     });
   });
 
-  // ================== الإعدادات (حفظ محلي) ==================
+  // ================== الإعدادات ==================
   $("#saveSettings")?.addEventListener("click", () => {
     localStorage.setItem("OPENAI_KEY", $("#openaiKey")?.value || "");
     localStorage.setItem("GOOGLE_CLIENT_ID", $("#googleClientId")?.value || "");
@@ -205,10 +196,9 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("LOCK_USER", $("#lockCfgUser")?.value || "");
     localStorage.setItem("LOCK_PASS", $("#lockCfgPass")?.value || "");
     toast("تم حفظ الإعدادات ✅");
-    console.log("[Settings] saved");
+    event("settings_saved", { lockEnabled: $("#lockEnabled")?.checked === true, repoConfigured: !!$("#ghRepo")?.value });
   });
-
-  $("#btnConnectDrive")?.addEventListener("click", () => toast("ربط Google Drive (تجريبي)"));
-  $("#btnPickUpdate")?.addEventListener("click", () => $("#ghFiles").click());
-  $("#btnUploadUpdate")?.addEventListener("click", () => toast("رفع التحديث (محاكاة) ✅"));
+  $("#btnConnectDrive")?.addEventListener("click", () => { toast("ربط Google Drive (تجريبي)"); event("drive_connect_attempt", {}); });
+  $("#btnPickUpdate")?.addEventListener("click", () => { $("#ghFiles").click(); event("update_file_picker_opened", {}); });
+  $("#btnUploadUpdate")?.addEventListener("click", () => { toast("رفع التحديث (محاكاة) ✅"); event("update_upload_demo", {}); });
 });
