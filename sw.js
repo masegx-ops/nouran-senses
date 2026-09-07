@@ -1,11 +1,14 @@
 // Service Worker — Nouran Senses
-const CACHE = 'nshell-v3';
+const CACHE = 'nshell-v4';
 const SHELL = [
   '/',
   '/index.html',
   '/style.css',
   '/app.js',
   '/continuity-core.js',
+  '/causal-ablation.js',
+  '/causal-ablation-batch.js',
+  '/path-dependence.js',
   '/manifest.webmanifest'
 ];
 
