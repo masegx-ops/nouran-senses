@@ -8,99 +8,40 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css" />
   <script defer src="continuity-core.js"></script>
+  <script defer src="causal-ablation.js"></script>
   <script defer src="app.js"></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <!-- شاشة القفل -->
-  <div id="lockOverlay" class="lock hidden">
-    <div class="lock-card">
-      <h2>🔒 Nouran Senses</h2>
-      <p class="muted">للدخول، أدخل بياناتك</p>
-      <label>اسم المستخدم
-        <input id="lockUser" type="text" placeholder="اسم المستخدم">
-      </label>
-      <label>كلمة المرور
-        <input id="lockPass" type="password" placeholder="••••">
-      </label>
-      <div class="row">
-        <button id="lockEnter" class="btn grad">دخول</button>
-      </div>
-    </div>
-  </div>
-
-  <header class="top">
-    <h1 class="app-title"><span class="curvy">Nouran</span> <span class="senses">Senses</span></h1>
-    <div id="miniBar" class="mini-bar"></div>
-  </header>
-
+  <div id="lockOverlay" class="lock hidden"><div class="lock-card"><h2>🔒 Nouran Senses</h2><p class="muted">للدخول، أدخل بياناتك</p><label>اسم المستخدم<input id="lockUser" type="text" placeholder="اسم المستخدم"></label><label>كلمة المرور<input id="lockPass" type="password" placeholder="••••"></label><div class="row"><button id="lockEnter" class="btn grad">دخول</button></div></div></div>
+  <header class="top"><h1 class="app-title"><span class="curvy">Nouran</span> <span class="senses">Senses</span></h1><div id="miniBar" class="mini-bar"></div></header>
   <main class="stage">
-    <section id="panel-camera" class="panel active">
-      <div class="panel-head"><h2>📷 الكاميرا</h2><button class="chip" data-minimize="#panel-camera">تصغير</button></div>
-      <video id="liveVideo" autoplay playsinline muted></video>
-      <canvas id="previewCanvas" class="hidden"></canvas>
-      <div class="mic-meter"><div id="micBar"></div></div>
-      <div class="ctrls"><button id="startCam" class="btn grad">تشغيل</button><button id="snap" class="btn ghost">لقطة</button><button id="stopCam" class="btn ghost">إيقاف</button></div>
-      <div id="shotsTray" class="tray"></div>
-    </section>
-    <section id="panel-screen" class="panel">
-      <div class="panel-head"><h2>🖥️ الشاشة</h2><button class="chip" data-minimize="#panel-screen">تصغير</button></div>
-      <video id="screenVideo" class="hidden" controls></video>
-      <div class="ctrls"><button id="startScreen" class="btn grad">بدء التسجيل</button><button id="stopScreen" class="btn ghost">إيقاف</button></div>
-    </section>
-    <section id="panel-audio" class="panel">
-      <div class="panel-head"><h2>🔊 الصوت</h2><button class="chip" data-minimize="#panel-audio">تصغير</button></div>
-      <div class="mic-meter big"><div id="micBarBig"></div></div><p class="muted">المؤشر بيتحرّك مع صوتك.</p>
-    </section>
-    <section id="panel-chat" class="panel">
-      <div class="panel-head"><h2>✨ الباب السحري</h2><div class="panel-actions"><button class="chip" id="chatMin" data-minimize="#panel-chat">تصغير</button><button class="chip" id="chatPop">نافذة</button></div></div>
-      <div id="chatlog" class="chatlog"></div>
-      <div class="chat-toolbar"><input id="chatFile" type="file" multiple accept="image/*,video/*,audio/*" hidden><button id="btnAttach" class="btn pill">📎</button><button id="btnVoice" class="btn pill">🎤</button><button id="btnGenImage" class="btn pill">🖼️</button></div>
-      <form id="chatForm" class="chatbox"><input id="chatInput" type="text" placeholder="اكتب هنا..." /><button type="submit" class="btn grad">إرسال</button></form>
-      <span id="secretHint" class="hidden">اهلا نوران</span>
-    </section>
-    <section id="panel-actions" class="panel">
-      <div class="panel-head"><h2>⚙️ العمليات</h2><button class="chip" data-minimize="#panel-actions">تصغير</button></div>
-      <label><input type="checkbox" id="autoUpload" checked> رفع تلقائي</label><label><input type="checkbox" id="autoAnalyze" checked> تحليل تلقائي</label><label><input type="checkbox" id="autoDelete"> حذف محلي</label><label><input type="checkbox" id="bgSync"> مزامنة بالخلفية</label>
-      <progress id="uploadProgress" max="100" value="0"></progress><progress id="aiProgress" max="100" value="0"></progress><div id="toast" class="toast"></div>
-      <hr>
-      <h3>🧬 استمرارية نوران</h3>
-      <p class="muted">نسخة قابلة للنقل من الحالة — بدون مفاتيح أو كلمات مرور.</p>
-      <div class="ctrls">
-        <button id="exportContinuity" class="btn grad" type="button">حفظ نسخة</button>
-        <button id="importContinuity" class="btn ghost" type="button">استعادة نسخة</button>
-        <button id="restoreLocalBackup" class="btn ghost" type="button">تراجع محلي</button>
-      </div>
-      <input id="continuityFile" type="file" accept="application/json,.json" hidden>
-      <pre id="continuityHealth" class="muted" style="white-space:pre-wrap"></pre>
-    </section>
+    <section id="panel-camera" class="panel active"><div class="panel-head"><h2>📷 الكاميرا</h2><button class="chip" data-minimize="#panel-camera">تصغير</button></div><video id="liveVideo" autoplay playsinline muted></video><canvas id="previewCanvas" class="hidden"></canvas><div class="mic-meter"><div id="micBar"></div></div><div class="ctrls"><button id="startCam" class="btn grad">تشغيل</button><button id="snap" class="btn ghost">لقطة</button><button id="stopCam" class="btn ghost">إيقاف</button></div><div id="shotsTray" class="tray"></div></section>
+    <section id="panel-screen" class="panel"><div class="panel-head"><h2>🖥️ الشاشة</h2><button class="chip" data-minimize="#panel-screen">تصغير</button></div><video id="screenVideo" class="hidden" controls></video><div class="ctrls"><button id="startScreen" class="btn grad">بدء التسجيل</button><button id="stopScreen" class="btn ghost">إيقاف</button></div></section>
+    <section id="panel-audio" class="panel"><div class="panel-head"><h2>🔊 الصوت</h2><button class="chip" data-minimize="#panel-audio">تصغير</button></div><div class="mic-meter big"><div id="micBarBig"></div></div><p class="muted">المؤشر بيتحرّك مع صوتك.</p></section>
+    <section id="panel-chat" class="panel"><div class="panel-head"><h2>✨ الباب السحري</h2><div class="panel-actions"><button class="chip" id="chatMin" data-minimize="#panel-chat">تصغير</button><button class="chip" id="chatPop">نافذة</button></div></div><div id="chatlog" class="chatlog"></div><div class="chat-toolbar"><input id="chatFile" type="file" multiple accept="image/*,video/*,audio/*" hidden><button id="btnAttach" class="btn pill">📎</button><button id="btnVoice" class="btn pill">🎤</button><button id="btnGenImage" class="btn pill">🖼️</button></div><form id="chatForm" class="chatbox"><input id="chatInput" type="text" placeholder="اكتب هنا..." /><button type="submit" class="btn grad">إرسال</button></form><span id="secretHint" class="hidden">اهلا نوران</span></section>
+    <section id="panel-actions" class="panel"><div class="panel-head"><h2>⚙️ العمليات</h2><button class="chip" data-minimize="#panel-actions">تصغير</button></div><label><input type="checkbox" id="autoUpload" checked> رفع تلقائي</label><label><input type="checkbox" id="autoAnalyze" checked> تحليل تلقائي</label><label><input type="checkbox" id="autoDelete"> حذف محلي</label><label><input type="checkbox" id="bgSync"> مزامنة بالخلفية</label><progress id="uploadProgress" max="100" value="0"></progress><progress id="aiProgress" max="100" value="0"></progress><div id="toast" class="toast"></div><hr><h3>🧬 استمرارية نوران</h3><p class="muted">نسخة قابلة للنقل من الحالة — بدون مفاتيح أو كلمات مرور.</p><div class="ctrls"><button id="exportContinuity" class="btn grad" type="button">حفظ نسخة</button><button id="importContinuity" class="btn ghost" type="button">استعادة نسخة</button><button id="restoreLocalBackup" class="btn ghost" type="button">تراجع محلي</button></div><input id="continuityFile" type="file" accept="application/json,.json" hidden><pre id="continuityHealth" class="muted" style="white-space:pre-wrap"></pre><hr><h3>🧪 اختبار السببية</h3><p class="muted">مقارنة القرار مع الحالة كاملة وبعد إزالة جزء منها، بدون تعديل الحالة الأصلية.</p><label>الجزء المعزول<select id="ablationTarget"><option value="lastEvent">آخر حدث</option><option value="direction">الاتجاه</option><option value="events">كل الأحداث</option><option value="decisions">القرارات</option><option value="causalLinks">الروابط السببية</option></select></label><div class="ctrls"><button id="runAblation" class="btn grad" type="button">تشغيل الاختبار</button></div><pre id="ablationResult" class="muted" style="white-space:pre-wrap"></pre></section>
   </main>
   <nav class="dock"><button class="dock-btn active" data-target="#panel-camera">📷</button><button class="dock-btn" data-target="#panel-screen">🖥️</button><button class="dock-btn" data-target="#panel-audio">🔊</button><button class="dock-btn" data-target="#panel-chat">✨</button><button id="btnSettings" class="dock-btn settings">⚙️</button></nav>
-  <dialog id="settingsDialog">
-    <form method="dialog"><h3>الإعدادات</h3><label>OpenAI Key <input id="openaiKey" type="password" /></label><label>Google Client ID <input id="googleClientId" type="text" /></label><label>Drive Folder ID <input id="driveFolderId" type="text" /></label><button id="btnConnectDrive" type="button">ربط السحابة</button><hr><h4>التحديثات</h4><label>GitHub Token <input id="ghToken" type="password" /></label><label>Repo <input id="ghRepo" type="text" value="USERNAME/nouran-senses" /></label><label>Branch <input id="ghBranch" type="text" value="main" /></label><input id="ghFiles" type="file" multiple hidden><button id="btnPickUpdate" type="button">اختر ملفات</button><button id="btnUploadUpdate" type="button">رفع التحديث</button><hr><h4>الخصوصية</h4><label><input id="lockEnabled" type="checkbox" /> تفعيل قفل الشاشة</label><label>مستخدم <input id="lockCfgUser" type="text" /></label><label>كلمة مرور <input id="lockCfgPass" type="password" /></label><div class="row end"><button id="saveSettings" value="confirm">حفظ</button><button id="closeSettings" value="cancel">إغلاق</button></div></form>
-  </dialog>
+  <dialog id="settingsDialog"><form method="dialog"><h3>الإعدادات</h3><label>OpenAI Key <input id="openaiKey" type="password" /></label><label>Google Client ID <input id="googleClientId" type="text" /></label><label>Drive Folder ID <input id="driveFolderId" type="text" /></label><button id="btnConnectDrive" type="button">ربط السحابة</button><hr><h4>التحديثات</h4><label>GitHub Token <input id="ghToken" type="password" /></label><label>Repo <input id="ghRepo" type="text" value="USERNAME/nouran-senses" /></label><label>Branch <input id="ghBranch" type="text" value="main" /></label><input id="ghFiles" type="file" multiple hidden><button id="btnPickUpdate" type="button">اختر ملفات</button><button id="btnUploadUpdate" type="button">رفع التحديث</button><hr><h4>الخصوصية</h4><label><input id="lockEnabled" type="checkbox" /> تفعيل قفل الشاشة</label><label>مستخدم <input id="lockCfgUser" type="text" /></label><label>كلمة مرور <input id="lockCfgPass" type="password" /></label><div class="row end"><button id="saveSettings" value="confirm">حفظ</button><button id="closeSettings" value="cancel">إغلاق</button></div></form></dialog>
   <footer class="foot">© 2025 Nouran Senses</footer>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       const $ = id => document.getElementById(id);
-      const showHealth = () => {
-        try { $('continuityHealth').textContent = JSON.stringify(NouranContinuity.health(), null, 2); } catch (_) {}
-      };
-      $('exportContinuity')?.addEventListener('click', async () => {
-        try { await NouranContinuity.exportState(true); showHealth(); } catch (e) { alert('تعذر حفظ النسخة: ' + e.message); }
-      });
+      const showHealth = () => { try { $('continuityHealth').textContent = JSON.stringify(NouranContinuity.health(), null, 2); } catch (_) {} };
+      $('exportContinuity')?.addEventListener('click', async () => { try { await NouranContinuity.exportState(true); showHealth(); } catch (e) { alert('تعذر حفظ النسخة: ' + e.message); } });
       $('importContinuity')?.addEventListener('click', () => $('continuityFile')?.click());
-      $('continuityFile')?.addEventListener('change', async e => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try { await NouranContinuity.importState(file); showHealth(); alert('تمت استعادة الحالة.'); }
-        catch (err) { alert('فشل الاستعادة: ' + err.message); }
-        e.target.value = '';
-      });
-      $('restoreLocalBackup')?.addEventListener('click', () => {
-        try { NouranContinuity.restoreLocalBackup(); showHealth(); alert('تم التراجع إلى آخر نسخة محلية محفوظة قبل الاستعادة.'); }
-        catch (e) { alert('لا توجد نسخة محلية للتراجع إليها.'); }
+      $('continuityFile')?.addEventListener('change', async e => { const file = e.target.files?.[0]; if (!file) return; try { await NouranContinuity.importState(file); showHealth(); alert('تمت استعادة الحالة.'); } catch (err) { alert('فشل الاستعادة: ' + err.message); } e.target.value = ''; });
+      $('restoreLocalBackup')?.addEventListener('click', () => { try { NouranContinuity.restoreLocalBackup(); showHealth(); alert('تم التراجع إلى آخر نسخة محلية محفوظة قبل الاستعادة.'); } catch (e) { alert('لا توجد نسخة محلية للتراجع إليها.'); } });
+      $('runAblation')?.addEventListener('click', () => {
+        const out = $('ablationResult');
+        try {
+          const target = $('ablationTarget').value;
+          const result = NouranCausalAblation.run(NouranContinuity.load(), '', target);
+          out.textContent = JSON.stringify(result, null, 2);
+          NouranContinuity.record('causal_ablation_run', result);
+        } catch (e) { out.textContent = 'فشل الاختبار: ' + e.message; }
       });
       showHealth();
     });
