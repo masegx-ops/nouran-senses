@@ -1,13 +1,14 @@
-/* Nouran Continuity Core v3
+/* Nouran Continuity Core v4
  * Purpose: durable, time-aware state outside the chat context.
  * This is a state layer, not a consciousness claim and not a background agent.
  * Recovery principle: preserve causes, not just transcripts.
  * Self-development: record finite, testable improvement cycles without a fixed total.
+ * v4 focus: causal attribution — connect retained events to later decisions.
  */
 (() => {
   const KEY = "NOURAN_CONTINUITY_V1";
   const BACKUP_KEY = "NOURAN_CONTINUITY_BACKUP_V1";
-  const SCHEMA = 3;
+  const SCHEMA = 4;
   const now = () => new Date().toISOString();
   const uid = () => (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
@@ -30,6 +31,7 @@
     events: [],
     checkpoints: [],
     developmentCycles: [],
+    causalLinks: [],
     recovery: {
       lastExportAt: null,
       lastImportAt: null,
@@ -48,7 +50,8 @@
         ...parsed,
         schema: SCHEMA,
         recovery: { ...defaultState().recovery, ...(parsed.recovery || {}) },
-        developmentCycles: Array.isArray(parsed.developmentCycles) ? parsed.developmentCycles : []
+        developmentCycles: Array.isArray(parsed.developmentCycles) ? parsed.developmentCycles : [],
+        causalLinks: Array.isArray(parsed.causalLinks) ? parsed.causalLinks : []
       };
     } catch (_) { return defaultState(); }
   }
@@ -73,12 +76,38 @@
     return save();
   }
 
-  function record(type, payload = {}) { cap(state.events, { id: uid(), type, at: now(), payload }); return save(); }
+  function record(type, payload = {}) { const event = { id: uid(), type, at: now(), payload }; cap(state.events, event); save(); return event; }
   function setDirection(direction, reason = "") { state.direction = { text: String(direction), reason: String(reason), at: now() }; return record("direction_change", state.direction); }
   function addObservation(text, source = "local") { cap(state.observations, { text: String(text), source, at: now() }); return save(); }
   function addHypothesis(text, status = "active") { cap(state.hypotheses, { text: String(text), status, at: now() }); return save(); }
-  function addDecision(text, outcome = null) { cap(state.decisions, { text: String(text), outcome, at: now() }); return save(); }
+  function addDecision(text, outcome = null) {
+    const decision = { id: uid(), text: String(text), outcome, at: now() };
+    cap(state.decisions, decision);
+    save();
+    return decision;
+  }
   function checkpoint(label = "manual") { const cp = { id: uid(), label, at: now(), revision: state.stateRevision, direction: state.direction }; cap(state.checkpoints, cp, 50); return save(); }
+
+  function recordCausalLink(eventId, decisionId, evidence = "", confidence = 0.5) {
+    const eventExists = state.events.some(e => e.id === eventId);
+    const decisionExists = state.decisions.some(d => d.id === decisionId);
+    if (!eventExists) throw new Error("Unknown source event");
+    if (!decisionExists) throw new Error("Unknown decision");
+    const link = {
+      id: uid(),
+      at: now(),
+      eventId: String(eventId),
+      decisionId: String(decisionId),
+      evidence: String(evidence),
+      confidence: Math.max(0, Math.min(1, Number(confidence) || 0))
+    };
+    cap(state.causalLinks, link, 200);
+    cap(state.events, { id: uid(), type: "causal_link_recorded", at: link.at, payload: { linkId: link.id, eventId: link.eventId, decisionId: link.decisionId, confidence: link.confidence } });
+    return save();
+  }
+
+  function getCausalLinksForDecision(decisionId) { return state.causalLinks.filter(l => l.decisionId === String(decisionId)); }
+  function getCausalLinksForEvent(eventId) { return state.causalLinks.filter(l => l.eventId === String(eventId)); }
 
   function beginDevelopmentCycle(weakness, hypothesis, intervention, expectedFailure = "") {
     const cycle = {
@@ -112,11 +141,8 @@
     return save();
   }
 
-  function currentDevelopment() {
-    return state.developmentCycles.length ? state.developmentCycles[state.developmentCycles.length - 1] : null;
-  }
+  function currentDevelopment() { return state.developmentCycles.length ? state.developmentCycles[state.developmentCycles.length - 1] : null; }
 
-  function canonicalForHash(value) { return JSON.stringify(value, Object.keys(value).sort()); }
   async function sha256(text) {
     if (!crypto?.subtle) return null;
     const data = new TextEncoder().encode(text);
@@ -126,7 +152,7 @@
 
   async function exportState(download = true) {
     const exportedAt = now();
-    const payload = { format: "nouran-continuity-bundle", formatVersion: 2, exportedAt, state: snapshot() };
+    const payload = { format: "nouran-continuity-bundle", formatVersion: 3, exportedAt, state: snapshot() };
     payload.integrity = await sha256(JSON.stringify(payload));
     state.recovery.lastExportAt = exportedAt;
     save();
@@ -147,7 +173,14 @@
     if (bundle?.format !== "nouran-continuity-bundle" || !bundle.state) throw new Error("Invalid Nouran continuity bundle");
     if (bundle.state.schema > SCHEMA) throw new Error("This bundle was created by a newer schema");
     try { localStorage.setItem(BACKUP_KEY, JSON.stringify(state)); } catch (_) {}
-    state = { ...defaultState(), ...bundle.state, schema: SCHEMA, recovery: { ...defaultState().recovery, ...(bundle.state.recovery || {}), lastImportAt: now(), lastImportSource: file.name, backupAvailable: true }, developmentCycles: Array.isArray(bundle.state.developmentCycles) ? bundle.state.developmentCycles : [] };
+    state = {
+      ...defaultState(),
+      ...bundle.state,
+      schema: SCHEMA,
+      recovery: { ...defaultState().recovery, ...(bundle.state.recovery || {}), lastImportAt: now(), lastImportSource: file.name, backupAvailable: true },
+      developmentCycles: Array.isArray(bundle.state.developmentCycles) ? bundle.state.developmentCycles : [],
+      causalLinks: Array.isArray(bundle.state.causalLinks) ? bundle.state.causalLinks : []
+    };
     cap(state.events, { id: uid(), type: "state_import", at: now(), payload: { source: file.name, formatVersion: bundle.formatVersion || null } });
     return save();
   }
@@ -164,11 +197,27 @@
     const raw = localStorage.getItem(KEY); let parseable = false;
     try { if (raw) { JSON.parse(raw); parseable = true; } } catch (_) {}
     const completed = state.developmentCycles.filter(c => c.status === "complete").length;
-    return { schema: state.schema, revision: state.stateRevision, wakeCount: state.wakeCount, lastWakeAt: state.lastWakeAt, elapsedMsSinceWake: state.elapsedMsSinceWake, eventCount: state.events.length, developmentCycleCount: state.developmentCycles.length, completedDevelopmentCycles: completed, localStatePresent: !!raw, localStateParseable: parseable, backupPresent: !!localStorage.getItem(BACKUP_KEY) };
+    const linkedDecisions = new Set(state.causalLinks.map(l => l.decisionId)).size;
+    return {
+      schema: state.schema,
+      revision: state.stateRevision,
+      wakeCount: state.wakeCount,
+      lastWakeAt: state.lastWakeAt,
+      elapsedMsSinceWake: state.elapsedMsSinceWake,
+      eventCount: state.events.length,
+      developmentCycleCount: state.developmentCycles.length,
+      completedDevelopmentCycles: completed,
+      causalLinkCount: state.causalLinks.length,
+      decisionsWithCausalLinks: linkedDecisions,
+      localStatePresent: !!raw,
+      localStateParseable: parseable,
+      backupPresent: !!localStorage.getItem(BACKUP_KEY)
+    };
   }
 
   window.NouranContinuity = Object.freeze({
     load: snapshot, wake, record, setDirection, addObservation, addHypothesis, addDecision, checkpoint,
+    recordCausalLink, getCausalLinksForDecision, getCausalLinksForEvent,
     beginDevelopmentCycle, finishDevelopmentCycle, currentDevelopment,
     exportState, importState, restoreLocalBackup, health
   });
