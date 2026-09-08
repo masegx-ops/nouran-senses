@@ -1,4 +1,4 @@
-/* Nouran Controlled Continuity Test v1
+/* Nouran Controlled Continuity Test v2
  * Pre-registered, non-destructive browser experiment for U-002.
  * It tests one controlled intervention (direction) against an ablation and
  * includes a metadata-only negative control. It does not establish agency,
@@ -41,11 +41,12 @@
     const negativeControlOutput = policy(negativeControl, input);
 
     const interventionEffect = baselineOutput !== intervenedOutput;
-    const ablationReversal = intervenedOutput === ablatedOutput;
+    const ablationRemovesEffect = intervenedOutput !== ablatedOutput;
+    const returnsToBaseline = baselineOutput === ablatedOutput;
     const negativeControlStable = intervenedOutput === negativeControlOutput;
 
     const result = {
-      protocol: "controlled-continuity-v1",
+      protocol: "controlled-continuity-v2",
       hypothesis: "A retained direction state can causally alter the future policy output, while metadata-only changes do not.",
       input,
       intervention,
@@ -55,9 +56,10 @@
       negativeControl: { changedOnly: ["updatedAt", "stateRevision"], output: negativeControlOutput },
       tests: {
         interventionEffect,
-        ablationReversal,
+        ablationRemovesEffect,
+        returnsToBaseline,
         negativeControlStable,
-        controlledCausalPattern: interventionEffect && ablationReversal && negativeControlStable
+        controlledCausalPattern: interventionEffect && ablationRemovesEffect && returnsToBaseline && negativeControlStable
       },
       evidenceClass: "OBSERVED_IF_RUNTIME_EXECUTION_COMPLETES",
       limitation: "The policy is deterministic and hard-coded. A passing result establishes only state-dependence of this policy under the tested intervention; it is not evidence of consciousness, desire, or independent agency."
