@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "roles": [
+    {"id":"manager","purpose":"select the next reversible goal from evidence and constraints","requires":"state + opportunity registry","forbidden":"inventing success"},
+    {"id":"researcher","purpose":"retrieve current external evidence and compare primary sources","requires":"web/research provider","forbidden":"treating one source as proof"},
+    {"id":"builder","purpose":"implement small reversible changes and tests","requires":"repository/runtime","forbidden":"unreviewed destructive deployment"},
+    {"id":"tester","purpose":"run controls, negative controls, regression tests and record failures","requires":"runtime","forbidden":"sharing evaluator assumptions with target"},
+    {"id":"auditor","purpose":"classify evidence and block unsupported claims","requires":"provenance + evidence records","forbidden":"self-certifying critical claims"},
+    {"id":"operator","purpose":"invoke authorized external services under explicit credentials/limits","requires":"configured adapter","forbidden":"credential harvesting or privilege escalation"},
+    {"id":"archivist","purpose":"compress state without losing causal provenance or failed paths","requires":"portable bundle","forbidden":"deleting inconvenient evidence"}
+  ],
+  "coordination":"event-driven packet passing; each agent returns evidence, artifacts, failures and next recommendation"
+}

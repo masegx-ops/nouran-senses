@@ -1,0 +1,30 @@
+name: Nouran Gateway Test
+
+on:
+  push:
+    paths:
+      - "gateway/**"
+      - ".github/workflows/gateway-test.yml"
+  pull_request:
+    paths:
+      - "gateway/**"
+      - ".github/workflows/gateway-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test gateway
+        working-directory: gateway
+        run: npm test

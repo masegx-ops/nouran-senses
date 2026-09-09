@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "principle": "platform-capability-is-not-nouran-capability",
+  "evidenceClasses": ["OBSERVED","REPRODUCED","EXTERNAL","HYPOTHESIS","SIMULATION","UNKNOWN"],
+  "routes": [
+    {
+      "id": "github-actions-public",
+      "class": "CI_EXECUTION",
+      "status": "EXTERNAL",
+      "resource": "GitHub Actions",
+      "verifiedBy": "GitHub Docs",
+      "limits": "Standard runners are free for public repositories; paid/larger runners remain charged.",
+      "source": "https://docs.github.com/en/billing/concepts/product-billing/github-actions",
+      "nouranTest": "Run portable-core smoke and publish a signed JSON artifact."
+    },
+    {
+      "id": "cloudflare-d1",
+      "class": "DURABLE_STATE",
+      "status": "EXTERNAL",
+      "resource": "Cloudflare D1",
+      "verifiedBy": "Cloudflare Docs",
+      "limits": "Free: 5M rows read/day, 100k rows written/day, 5GB total storage; 10 free databases.",
+      "source": "https://developers.cloudflare.com/d1/platform/pricing/",
+      "nouranTest": "Persist state revisions and retrieve them after a fresh runtime."
+    },
+    {
+      "id": "cloudflare-kv",
+      "class": "FAST_STATE",
+      "status": "EXTERNAL",
+      "resource": "Cloudflare Workers KV",
+      "verifiedBy": "Cloudflare Docs",
+      "limits": "Free: 100k reads/day, 1k writes/day, 1GB storage.",
+      "source": "https://developers.cloudflare.com/kv/platform/pricing/",
+      "nouranTest": "Store compact checkpoints and compare recovery integrity."
+    },
+    {
+      "id": "cloudflare-workflows",
+      "class": "DURABLE_ORCHESTRATION",
+      "status": "EXTERNAL",
+      "resource": "Cloudflare Workflows",
+      "verifiedBy": "Cloudflare Docs",
+      "limits": "Free: 100k requests/day shared with Workers, 3k steps/day, 1GB storage, 10ms CPU/invocation baseline.",
+      "source": "https://developers.cloudflare.com/workflows/reference/pricing/",
+      "nouranTest": "Execute a multi-step experiment with retry/wait and persist outputs."
+    },
+    {
+      "id": "cloudflare-browser-run",
+      "class": "REMOTE_BROWSER",
+      "status": "EXTERNAL",
+      "resource": "Cloudflare Browser Run",
+      "verifiedBy": "Cloudflare Docs",
+      "limits": "Free: 10 browser minutes/day, 3 concurrent browser sessions, 60s timeout.",
+      "source": "https://developers.cloudflare.com/browser-run/limits/",
+      "nouranTest": "Fetch a public target page and store page fingerprint without credentials."
+    },
+    {
+      "id": "cloudflare-workers-ai",
+      "class": "REMOTE_INFERENCE",
+      "status": "EXTERNAL",
+      "resource": "Cloudflare Workers AI",
+      "verifiedBy": "Cloudflare Docs",
+      "limits": "Free allocation: 10,000 neurons/day; some frontier models require paid billing.",
+      "source": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+      "nouranTest": "Provider conformance test with a tiny prompt; record latency, result and rate-limit headers."
+    },
+    {
+      "id": "huggingface-zerogpu",
+      "class": "GPU",
+      "status": "EXTERNAL",
+      "resource": "Hugging Face ZeroGPU",
+      "verifiedBy": "Hugging Face Docs",
+      "limits": "Free accounts: 5 GPU-minutes/day; up to 2 hosted ZeroGPU Spaces when account is eligible; usage of existing Spaces is free.",
+      "source": "https://huggingface.co/docs/hub/spaces-zerogpu",
+      "nouranTest": "Short GPU inference/benchmark only; never make it a hard dependency."
+    },
+    {
+      "id": "kaggle-gpu",
+      "class": "GPU",
+      "status": "EXTERNAL",
+      "resource": "Kaggle Notebooks",
+      "verifiedBy": "Kaggle Docs",
+      "limits": "Free Tesla P100 notebook GPU; weekly quota documented as roughly 30h or higher depending on demand/resources.",
+      "source": "https://www.kaggle.com/docs/efficient-gpu-usage",
+      "nouranTest": "Benchmark open models and publish only reproducible measurements."
+    },
+    {
+      "id": "google-cloud-free",
+      "class": "VM",
+      "status": "EXTERNAL",
+      "resource": "Google Cloud Free Tier",
+      "verifiedBy": "Google Cloud Docs",
+      "limits": "Free e2-micro VM in eligible US regions plus other services; eligibility and region rules apply.",
+      "source": "https://cloud.google.com/free",
+      "nouranTest": "Use only after account-level eligibility is verified; never assume free means unlimited."
+    },
+    {
+      "id": "openrouter-free",
+      "class": "REMOTE_INFERENCE",
+      "status": "EXTERNAL",
+      "resource": "OpenRouter free models",
+      "verifiedBy": "OpenRouter",
+      "limits": "Free model availability and limits vary by provider and can change.",
+      "source": "https://openrouter.ai/collections/free-models",
+      "nouranTest": "Run provider-neutral evals; record exact model and response metadata."
+    },
+    {
+      "id": "groq-free",
+      "class": "REMOTE_INFERENCE",
+      "status": "EXTERNAL",
+      "resource": "Groq Free Plan",
+      "verifiedBy": "Groq Docs",
+      "limits": "Per-model RPM/RPD/TPM/TPD limits vary; examples include 30 RPM and 1K RPD for several models.",
+      "source": "https://console.groq.com/docs/rate-limits",
+      "nouranTest": "Provider conformance and long-context chunk benchmark."
+    },
+    {
+      "id": "kimi-k3",
+      "class": "OPEN_MODEL",
+      "status": "EXTERNAL",
+      "resource": "Moonshot Kimi K3",
+      "verifiedBy": "Moonshot GitHub + vLLM recipe",
+      "limits": "Open-weight 2.8T MoE, 104B active, 1,048,576-token context, native text/image; deployment recipe targets high-end accelerators.",
+      "source": "https://github.com/MoonshotAI/Kimi-K3",
+      "deploymentSource": "https://github.com/vllm-project/recipes/blob/main/models/moonshotai/Kimi-K3.yaml",
+      "nouranTest": "Use hosted API if independently available; treat local deployment as hardware-gated."
+    }
+  ],
+  "security": {
+    "secrets": "Never commit API keys, cookies, auth headers or tokens.",
+    "rule": "SECRET EXISTS — VERIFY/ROTATE",
+    "production": "No automatic production publishing or paid-resource escalation is enabled by this registry."
+  }
+}
