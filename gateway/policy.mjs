@@ -2,6 +2,7 @@ export const ACTIONS = Object.freeze({
   health: { risk: "read", enabled: true },
   state: { risk: "read", enabled: true },
   task_preview: { risk: "read", enabled: true },
+  lm_infer: { risk: "local_model", enabled: true },
   browser_open: { risk: "write_external", enabled: false },
   ui_click: { risk: "write_external", enabled: false },
   ui_type: { risk: "write_external", enabled: false },
