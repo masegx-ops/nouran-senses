@@ -1,4 +1,4 @@
-// Nouran Reality Gate v1
+// Nouran Reality Gate v2
 // A classification and promotion guard. It is a rule engine, not a consciousness detector.
 
 import { EVIDENCE } from './portable-core.mjs';
@@ -17,17 +17,24 @@ export function classify({ directObservation = false, repeated = false, independ
 export function auditClaim(claim, evidence = {}) {
   const risk = HIGH_RISK.test(String(claim));
   const cls = classify(evidence);
-  if (risk && ![EVIDENCE.OBSERVED, EVIDENCE.REPRODUCED].includes(cls)) {
-    return { claim, evidenceClass: cls, critical: true, allowed: false, reason: 'High-risk claim requires stronger independent evidence.' };
-  }
-  return { claim, evidenceClass: cls, critical: risk, allowed: true, reason: 'Classification gate passed for storage; not a scientific proof.' };
+  const allowed = risk ? cls === EVIDENCE.REPRODUCED : cls !== EVIDENCE.UNKNOWN;
+  return {
+    claim: String(claim),
+    evidenceClass: cls,
+    critical: risk,
+    allowed,
+    reason: risk
+      ? (allowed ? 'Critical claim met the reproduction gate; independent scientific interpretation is still required.' : 'Critical claim requires REPRODUCED evidence with independent checking.')
+      : (allowed ? 'Non-critical claim has evidence for storage; this is not a scientific proof.' : 'Claim remains UNKNOWN.')
+  };
 }
 
 export function requireEvidence(claim, minimum = EVIDENCE.OBSERVED, evidence = {}) {
   const audit = auditClaim(claim, evidence);
   const rank = { UNKNOWN: 0, HYPOTHESIS: 1, SIMULATION: 1, EXTERNAL: 2, OBSERVED: 3, REPRODUCED: 4 };
-  if ((rank[audit.evidenceClass] ?? 0) < (rank[minimum] ?? 0)) {
-    throw new Error(`Evidence gate failed: ${audit.evidenceClass} < ${minimum}`);
+  const target = Math.max(rank[minimum] ?? 0, audit.critical ? rank.REPRODUCED : 0);
+  if ((rank[audit.evidenceClass] ?? 0) < target) {
+    throw new Error(`Evidence gate failed: ${audit.evidenceClass} < ${Object.keys(rank).find(k => rank[k] === target)}`);
   }
   return audit;
 }
