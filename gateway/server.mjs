@@ -1,6 +1,7 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import { authorize } from "./policy.mjs";
+import { createLmStudioClient } from "./lm-studio.mjs";
 
 const HOST = process.env.NOURAN_HOST || "127.0.0.1";
 const PORT = Number(process.env.NOURAN_PORT || 8787);
@@ -8,6 +9,7 @@ const MAX_BODY = 64 * 1024;
 const startedAt = new Date().toISOString();
 const events = [];
 const state = { status: "ready", revision: 0, lastTask: null };
+const lm = createLmStudioClient();
 
 function id() { return crypto.randomUUID(); }
 function now() { return new Date().toISOString(); }
@@ -56,6 +58,36 @@ const server = http.createServer(async (req, res) => {
         const event = emit("task_rejected", { taskId, action, code: auth.code, risk: auth.risk || null });
         return json(res, 403, { ok: false, taskId, action, authorization: auth, eventId: event.id });
       }
+
+      if (action === "lm_infer") {
+        const messages = body.messages;
+        try {
+          const result = await lm.chat(messages, {
+            model: body.model,
+            temperature: body.temperature
+          });
+          const event = emit("lm_inference_completed", {
+            taskId,
+            model: result.model,
+            contentLength: result.content.length,
+            usage: result.usage
+          });
+          return json(res, 200, {
+            ok: true,
+            taskId,
+            action,
+            model: result.model,
+            content: result.content,
+            usage: result.usage,
+            eventId: event.id
+          });
+        } catch (error) {
+          const code = error.code || "LM_INFERENCE_ERROR";
+          const event = emit("lm_inference_failed", { taskId, code });
+          return json(res, 502, { ok: false, taskId, action, code, eventId: event.id });
+        }
+      }
+
       const task = { taskId, action, instruction: String(body.instruction || ""), mode: "preview", at: now() };
       state.lastTask = task;
       const event = emit("task_previewed", task);
