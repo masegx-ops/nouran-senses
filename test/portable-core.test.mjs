@@ -29,8 +29,9 @@ assert.equal(verifyBundle(broken).valid, false);
 
 assert.equal(classify({ directObservation: true }), EVIDENCE.OBSERVED);
 assert.equal(classify({ deterministicMock: true }), EVIDENCE.SIMULATION);
-assert.equal(auditClaim('consciousness exists', { directObservation: true }).allowed, true);
-assert.equal(auditClaim('consciousness exists', { directObservation: false }).allowed, false);
+assert.equal(auditClaim('consciousness exists', { directObservation: true }).allowed, false);
+assert.equal(auditClaim('consciousness exists', { repeated: true, independentCheck: true }).allowed, true);
+assert.equal(auditClaim('ordinary state update happened', { directObservation: true }).allowed, true);
 
 const context = compact(state, 'route-A', 5);
 assert.ok(context.selected.length > 0);
