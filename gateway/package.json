@@ -1,0 +1,14 @@
+{
+  "name": "nouran-windows-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Small dependency-free localhost gateway for Nouran Agent Core on Windows.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
