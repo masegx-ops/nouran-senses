@@ -1,0 +1,36 @@
+name: Nouran Portable Core CI
+
+on:
+  push:
+    branches: [main, 'nouran-*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Run portable core tests
+        run: node test/portable-core.test.mjs
+      - name: Emit provenance
+        run: |
+          mkdir -p ci-artifact
+          node -e "const fs=require('fs'); const p={generatedAt:new Date().toISOString(),commit:process.env.GITHUB_SHA,ref:process.env.GITHUB_REF,runner:process.env.RUNNER_OS,workflow:process.env.GITHUB_WORKFLOW}; fs.writeFileSync('ci-artifact/provenance.json',JSON.stringify(p,null,2));"
+          sha256sum ci-artifact/provenance.json > ci-artifact/provenance.sha256
+      - name: Upload evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nouran-core-evidence-${{ github.run_id }}
+          path: ci-artifact/
+          retention-days: 7
